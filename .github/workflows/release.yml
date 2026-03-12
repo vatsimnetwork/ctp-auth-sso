@@ -1,0 +1,50 @@
+name: goreleaser
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for Artifacts and Releases
+      contents: write
+      # Required to push docker images to ghcr.io
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.26
+
+      - name: Build Tailwind CSS
+        run: |
+          curl -sLo tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64
+          chmod +x tailwindcss
+          ./tailwindcss -i themes.css -o static/tailwind.css --content "templates/**/*.html" --minify
+
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser
+        id: goreleaser
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CGO_ENABLED: 0
+          GOEXPERIMENT: runtimesecret

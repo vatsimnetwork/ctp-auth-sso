@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Cross the Pond SSO</title>
+  <link rel="stylesheet" href="/static/tailwind.css" />
+  <script src="/static/theme.js?v={{.Version}}"></script>
+</head>
+<body class="min-h-full flex flex-col bg-ap-bg dark:bg-gp-bg text-ap-text dark:text-gp-text transition-colors duration-100">
+
+  <!-- Top bar -->
+  <header class="border-b border-ap-border dark:border-gp-border bg-gray-100 dark:bg-gp-surface">
+    <div class="max-w-5xl mx-auto px-6 h-12 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-sm font-medium tracking-tight text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Cross the Pond - SSO</a>
+        <span class="text-ap-border dark:text-gp-border">/</span>
+        <span class="text-sm text-ap-muted dark:text-gp-muted">Admin</span>
+      </div>
+      <button
+        id="theme-toggle"
+        class="text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100"
+        aria-label="Toggle theme"
+      >
+        <svg id="icon-sun" class="hidden dark:block w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <svg id="icon-moon" class="block dark:hidden w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
+    <div class="flex gap-8 items-start">
+
+      <!-- Left: roles list -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm font-medium">Roles</span>
+        </div>
+
+        {{if .Roles}}
+        <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          {{range .Roles}}
+          {{$roleName := .Name}}
+          <div class="bg-ap-surface dark:bg-gp-surface">
+            <!-- Role header row -->
+            <div class="flex items-center justify-between px-4 py-2">
+              <span class="text-sm font-medium">{{.Name}}</span>
+              {{if ne .Name "administrator"}}
+              <form method="POST" action="/admin/roles/delete">
+                <input type="hidden" name="name" value="{{.Name}}" />
+                <button
+                  type="submit"
+                  data-confirm="Delete role &quot;{{.Name}}&quot;? This will remove it from all users."
+                  class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                >Delete</button>
+              </form>
+              {{end}}
+            </div>
+
+            <!-- Users in this role -->
+            {{$adminCID := $.AdminCID}}
+            {{$sessionCID := $.SessionCID}}
+            {{$isAdminRole := eq .Name "administrator"}}
+            {{$hasAdminPin := and $isAdminRole (ne $adminCID "")}}
+            {{if or .Users $hasAdminPin}}
+            <div class="border-t border-ap-border dark:border-gp-border divide-y divide-ap-border dark:divide-gp-border">
+              {{if $hasAdminPin}}
+              <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                <span class="text-sm text-ap-muted dark:text-gp-muted"><span class="font-mono">{{$adminCID}}</span></span>
+                <span class="text-xs text-ap-muted dark:text-gp-muted">env</span>
+              </div>
+              {{end}}
+              {{range .Users}}
+              <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                <span class="text-sm text-ap-muted dark:text-gp-muted">{{if .FullName}}{{.FullName}} {{end}}<span class="font-mono">{{.CID}}</span></span>
+                {{if and $isAdminRole (eq .CID $sessionCID)}}
+                <span class="text-xs text-ap-muted dark:text-gp-muted">you</span>
+                {{else}}
+                <form method="POST" action="/admin/roles/remove">
+                  <input type="hidden" name="cid" value="{{.CID}}" />
+                  <input type="hidden" name="role" value="{{$roleName}}" />
+                  <button
+                    type="submit"
+                    data-confirm="Remove {{.FullName}} from role &quot;{{$roleName}}&quot;?"
+                    class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                  >Remove</button>
+                </form>
+                {{end}}
+              </div>
+              {{end}}
+            </div>
+            {{else}}
+            <div class="px-4 py-2 border-t border-ap-border dark:border-gp-border">
+              <span class="text-xs text-ap-muted dark:text-gp-muted">No users assigned</span>
+            </div>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <p class="text-sm text-ap-muted dark:text-gp-muted">No roles yet.</p>
+        {{end}}
+      </div>
+
+      <!-- Right: action forms -->
+      <div class="w-72 flex-shrink-0 flex flex-col gap-6">
+
+        <!-- Assign role to CID -->
+        <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+            <span class="text-sm font-medium">Assign role</span>
+          </div>
+          <form method="POST" action="/admin/roles/assign" class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="assign-cid">CID</label>
+              <input
+                id="assign-cid"
+                name="cid"
+                type="text"
+                placeholder="1234567"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              />
+              <span class="text-xs text-ap-muted dark:text-gp-muted">Name will appear after first login.</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="assign-role">Role</label>
+              <select
+                id="assign-role"
+                name="role"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              >
+                <option value="" disabled selected>Select a role</option>
+                {{range .Roles}}
+                <option value="{{.Name}}">{{.Name}}</option>
+                {{end}}
+              </select>
+            </div>
+            <button
+              type="submit"
+              class="px-3 py-1.5 text-sm rounded-md bg-ap-primary dark:bg-gp-primary text-white hover:opacity-90 transition-opacity duration-100"
+            >Assign</button>
+          </form>
+        </div>
+
+        <!-- Create new role -->
+        <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+            <span class="text-sm font-medium">New role</span>
+          </div>
+          <form method="POST" action="/admin/roles/create" class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="new-role-name">Name</label>
+              <input
+                id="new-role-name"
+                name="name"
+                type="text"
+                placeholder="event_staff"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              />
+            </div>
+            <button
+              type="submit"
+              class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border text-ap-text dark:text-gp-text hover:border-ap-primary dark:hover:border-gp-primary transition-colors duration-100"
+            >Create</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/admin.js?v={{.Version}}"></script>
+</body>
+</html>

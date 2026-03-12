@@ -6,6 +6,7 @@ type pageData struct {
 	LoggedIn bool
 	UserName string
 	CID      string
+	IsAdmin  bool
 	Services []config.ServiceEntry
 	AppEnv   string
 	Version  int64

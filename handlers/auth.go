@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/subtle"
 	"errors"
 	"time"
 
@@ -14,6 +15,10 @@ import (
 
 const stateCookieName = "oauth_state"
 const sessionCookieName = "session_id"
+const reauthCookieName = "reauth_at"
+const returnToCookieName = "return_to"
+
+const reauthMaxAge = 15 * 60 // 15 minutes
 
 func Login(c fiber.Ctx) error {
 	state, err := services.GenerateStateToken()
@@ -42,7 +47,7 @@ func Callback(c fiber.Ctx) error {
 	}
 
 	cookieState := c.Cookies(stateCookieName)
-	if cookieState == "" || cookieState != state {
+	if cookieState == "" || subtle.ConstantTimeCompare([]byte(cookieState), []byte(state)) != 1 {
 		log.Warn().Str("ip", c.IP()).Msg("oauth state mismatch")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "invalid_state",
@@ -98,9 +103,15 @@ func Callback(c fiber.Ctx) error {
 	}
 
 	setSessionCookie(c, session.Token, session.ExpiresAt)
+	setReauthCookie(c)
 
 	log.Info().Str("cid", vUser.CID).Str("session", services.ShortID(session.ID)).Str("ip", ip).Msg("login successful")
 
+	returnTo := c.Cookies(returnToCookieName)
+	clearReturnToCookie(c)
+	if returnTo == "/admin" || returnTo == "/admin/" {
+		return c.Redirect().To(returnTo)
+	}
 	return c.Redirect().To("/")
 }
 
@@ -115,6 +126,7 @@ func Logout(c fiber.Ctx) error {
 	}
 
 	clearSessionCookie(c)
+	clearReauthCookie(c)
 	return c.Redirect().To("/")
 }
 
@@ -176,6 +188,62 @@ func GetSessionCookieName() string {
 
 func IsLoggedIn(c fiber.Ctx) bool {
 	return c.Cookies(sessionCookieName) != ""
+}
+
+func setReauthCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     reauthCookieName,
+		Value:    services.GenerateReauthToken(),
+		HTTPOnly: true,
+		Secure:   config.C.CookieSecure,
+		SameSite: "Lax",
+		MaxAge:   reauthMaxAge,
+		Path:     "/admin",
+		Domain:   config.C.CookieDomain,
+	})
+}
+
+func clearReauthCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     reauthCookieName,
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   config.C.CookieSecure,
+		SameSite: "Lax",
+		MaxAge:   -1,
+		Path:     "/admin",
+		Domain:   config.C.CookieDomain,
+	})
+}
+
+func SetReturnToCookie(c fiber.Ctx, dest string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     returnToCookieName,
+		Value:    dest,
+		HTTPOnly: true,
+		Secure:   config.C.CookieSecure,
+		SameSite: "Lax",
+		MaxAge:   10 * 60,
+		Path:     "/",
+		Domain:   config.C.CookieDomain,
+	})
+}
+
+func clearReturnToCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     returnToCookieName,
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   config.C.CookieSecure,
+		SameSite: "Lax",
+		MaxAge:   -1,
+		Path:     "/",
+		Domain:   config.C.CookieDomain,
+	})
+}
+
+func ValidReauthCookie(c fiber.Ctx) bool {
+	return services.ValidateReauthToken(c.Cookies(reauthCookieName))
 }
 
 func ErrToStatus(err error) int {

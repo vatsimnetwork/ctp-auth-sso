@@ -66,6 +66,16 @@ func main() {
 		},
 	})
 
+	app.Hooks().OnPreStartupMessage(func(sm *fiber.PreStartupMessageData) error {
+		sm.BannerHeader = `
+          ______________      ____________ 
+         / ___/_  __/ _ \____/ __/ __/ __ \
+        / /__  / / / ___/___/\ \_\ \/ /_/ /
+        \___/ /_/ /_/      /___/___/\____/ 
+		`
+		return nil
+	})
+
 	database.Connect()
 
 	services.StartSessionCleanup(6 * time.Hour)
@@ -82,6 +92,13 @@ func main() {
 	app.Get("/auth/login", authLimiter, handlers.Login)
 	app.Get("/auth/callback", authLimiter, handlers.Callback)
 	app.Post("/auth/logout", authLimiter, middleware.OriginCheck, handlers.Logout)
+
+	admin := app.Group("/admin", middleware.RequireAdmin)
+	admin.Get("/", handlers.AdminPanel)
+	admin.Post("/roles/create", middleware.OriginCheck, handlers.AdminCreateRole)
+	admin.Post("/roles/delete", middleware.OriginCheck, handlers.AdminDeleteRole)
+	admin.Post("/roles/assign", middleware.OriginCheck, handlers.AdminAssignRole)
+	admin.Post("/roles/remove", middleware.OriginCheck, handlers.AdminRemoveRole)
 
 	if len(config.C.InternalAllowlist) > 0 {
 		app.Get("/internal/session/validate",

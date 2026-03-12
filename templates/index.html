@@ -16,6 +16,9 @@
       <div class="flex items-center gap-4">
         {{if .LoggedIn}}
         <span class="text-sm text-ap-text dark:text-gp-text">{{.UserName}} ({{.CID}})</span>
+        {{if .IsAdmin}}
+        <a href="/admin" class="text-sm text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Admin</a>
+        {{end}}
         <form method="POST" action="/auth/logout">
           <button
             type="submit"

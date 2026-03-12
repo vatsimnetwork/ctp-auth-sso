@@ -1,6 +1,7 @@
 package services
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -57,7 +58,7 @@ func CreateSession(userID uint, ip, userAgent string) (*models.Session, error) {
 func ValidateSession(token, ip, userAgent string) (*models.User, error) {
 	sessionID := hashSessionToken(token)
 	var session models.Session
-	err := database.DB.Preload("User").First(&session, "id = ?", sessionID).Error
+	err := database.DB.Preload("User.Roles").First(&session, "id = ?", sessionID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrSessionNotFound
 	}
@@ -135,24 +136,44 @@ func generateToken() (string, error) {
 }
 
 func GenerateStateToken() (string, error) {
-	rand, err := generateToken()
+	nonce, err := generateToken()
 	if err != nil {
 		return "", err
 	}
 	ts := strconv.FormatInt(time.Now().Unix(), 10)
-	return ts + "." + rand, nil
+	payload := ts + "." + nonce
+	mac := computeStateMAC(payload)
+	return payload + "." + mac, nil
 }
 
 func ValidateStateToken(token string) bool {
-	dot := strings.IndexByte(token, '.')
-	if dot < 1 {
+	lastDot := strings.LastIndexByte(token, '.')
+	if lastDot < 1 {
 		return false
 	}
-	ts, err := strconv.ParseInt(token[:dot], 10, 64)
+	payload := token[:lastDot]
+	gotMAC := token[lastDot+1:]
+
+	expectedMAC := computeStateMAC(payload)
+	if !hmac.Equal([]byte(gotMAC), []byte(expectedMAC)) {
+		return false
+	}
+
+	firstDot := strings.IndexByte(payload, '.')
+	if firstDot < 1 {
+		return false
+	}
+	ts, err := strconv.ParseInt(payload[:firstDot], 10, 64)
 	if err != nil {
 		return false
 	}
 	return time.Since(time.Unix(ts, 0)) <= 10*time.Minute
+}
+
+func computeStateMAC(payload string) string {
+	mac := hmac.New(sha256.New, []byte(config.C.StateTokenSecret))
+	mac.Write([]byte(payload))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func hashSessionToken(token string) string {
@@ -187,4 +208,32 @@ func StartSessionCleanup(interval time.Duration) {
 			}
 		}
 	}()
+}
+
+const reauthWindow = 15 * time.Minute
+
+func GenerateReauthToken() string {
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
+	mac := computeStateMAC(ts)
+	return ts + "." + mac
+}
+
+func ValidateReauthToken(token string) bool {
+	dot := strings.IndexByte(token, '.')
+	if dot < 1 {
+		return false
+	}
+	payload := token[:dot]
+	gotMAC := token[dot+1:]
+
+	expectedMAC := computeStateMAC(payload)
+	if !hmac.Equal([]byte(gotMAC), []byte(expectedMAC)) {
+		return false
+	}
+
+	ts, err := strconv.ParseInt(payload, 10, 64)
+	if err != nil {
+		return false
+	}
+	return time.Since(time.Unix(ts, 0)) <= reauthWindow
 }

@@ -32,8 +32,12 @@ type Config struct {
 
 	InternalAPIKey string
 
+	StateTokenSecret string
+
 	// IPs that can validate Sessions
 	InternalAllowlist []string
+
+	AdminCID string
 
 	TrustedProxies []string
 
@@ -73,7 +77,10 @@ func Load() {
 		VatsimRedirectURI:  requireEnv("VATSIM_REDIRECT_URI"),
 
 		InternalAPIKey:    requireEnv("INTERNAL_API_KEY"),
+		StateTokenSecret:  requireEnv("STATE_TOKEN_SECRET"),
 		InternalAllowlist: splitCSV(getEnv("INTERNAL_ALLOWLIST", "")),
+
+		AdminCID: getEnv("ADMIN_CID", ""),
 
 		TrustedProxies: splitCSV(getEnv("TRUSTED_PROXIES", "")),
 		ProxyHeader:    getEnv("PROXY_HEADER", "X-Forwarded-For"),

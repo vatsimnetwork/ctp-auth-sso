@@ -52,7 +52,13 @@ func ValidateSession(c fiber.Ctx) error {
 
 	log.Debug().Str("session", services.ShortID(sessionID)).Str("cid", user.CID).Msg("session valid")
 
+	roles := make([]string, len(user.Roles))
+	for i, r := range user.Roles {
+		roles[i] = r.Name
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"cid": user.CID,
+		"cid":   user.CID,
+		"roles": roles,
 	})
 }

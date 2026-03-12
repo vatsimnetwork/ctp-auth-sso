@@ -29,8 +29,12 @@ func Connect() {
 
 	log.Info().Msg("running migrations...")
 
-	if err := DB.AutoMigrate(&models.User{}, &models.Session{}); err != nil {
+	if err := DB.AutoMigrate(&models.User{}, &models.Session{}, &models.Role{}); err != nil {
 		log.Fatal().Err(err).Msg("automigrate failed")
+	}
+
+	if err := DB.FirstOrCreate(&models.Role{}, models.Role{Name: "administrator"}).Error; err != nil {
+		log.Fatal().Err(err).Msg("failed to seed administrator role")
 	}
 
 	log.Info().Msg("database ready")
@@ -44,9 +48,9 @@ type zerologAdapter struct {
 
 func newZerologAdapter() gormlogger.Interface {
 	level := gormlogger.Warn
-	if config.C.AppEnv == "development" {
-		level = gormlogger.Warn
-	}
+	// if config.C.AppEnv == "development" {
+	// 	level = gormlogger.Info
+	// }
 	return &zerologAdapter{
 		SlowThreshold: 200 * time.Millisecond,
 		level:         level,

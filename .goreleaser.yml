@@ -1,0 +1,27 @@
+﻿version: 2
+
+before:
+  hooks:
+    - go generate ./...
+    - go mod tidy
+
+builds:
+  - goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X {{.ModulePath}}/meta.Version={{.Version}} -X {{.ModulePath}}/meta.Commit={{.Commit}} -X {{.ModulePath}}/meta.BuildDate={{.Date}}
+
+dockers_v2:
+  - id: ctp-auth-sso
+    dockerfile: Dockerfile
+    images:
+      - ghcr.io/vatsimnetwork/ctp-auth-sso
+    tags:
+      - "{{ .Tag }}"
+      - "latest"
+    platforms:
+      - linux/amd64
+      - linux/arm64/v8
