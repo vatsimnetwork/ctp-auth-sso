@@ -1,18 +1,14 @@
-name: goreleaser
+name: snapshot
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [development]
 
 jobs:
-  goreleaser:
+  snapshot:
     runs-on: ubuntu-latest
     permissions:
-      # Required for Artifacts and Releases
-      contents: write
-      # Required to push docker images to ghcr.io
-      packages: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -30,20 +26,12 @@ jobs:
           chmod +x tailwindcss
           ./tailwindcss -i themes.css -o static/tailwind.css --content "templates/**/*.html" --minify
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run GoReleaser
-        id: goreleaser
+      - name: Run GoReleaser (snapshot)
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CGO_ENABLED: 0
