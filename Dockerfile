@@ -1,5 +1,5 @@
 FROM gcr.io/distroless/base
 
-COPY egm-fraktions-bot ./egm-fraktions-bot
+COPY ctp-auth-sso ./ctp-auth-sso
  
-CMD ["/egm-fraktions-bot"]
+CMD ["/ctp-auth-sso"]
