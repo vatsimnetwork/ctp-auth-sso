@@ -1,5 +1,6 @@
 FROM gcr.io/distroless/base
 
-COPY ctp-auth-sso ./ctp-auth-sso
- 
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/ctp-auth-sso ./ctp-auth-sso
+
 CMD ["/ctp-auth-sso"]

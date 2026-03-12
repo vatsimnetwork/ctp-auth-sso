@@ -1,7 +1,7 @@
 ﻿version: 2
 
 snapshot:
-  name_template: "dev-{{ .ShortCommit }}"
+  version_template: "dev-{{ .ShortCommit }}"
 
 before:
   hooks:
@@ -23,7 +23,7 @@ dockers_v2:
     images:
       - ghcr.io/vatsimnetwork/ctp-auth-sso
     tags:
-      - "{{ .Tag }}"
+      - "{{ .Version }}"
       - "latest"
     platforms:
       - linux/amd64
