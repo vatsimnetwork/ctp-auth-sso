@@ -14,7 +14,6 @@ builds:
       - linux
     goarch:
       - amd64
-      - arm64
     ldflags:
       - -s -w -X {{.ModulePath}}/meta.Version={{.Version}} -X {{.ModulePath}}/meta.Commit={{.Commit}} -X {{.ModulePath}}/meta.BuildDate={{.Date}}
 
@@ -22,6 +21,7 @@ dockers_v2:
   - id: ctp-auth-sso
     ids:
       - ctp-auth-sso
+    disable: "{{ .IsSnapshot }}"
     dockerfile: Dockerfile
     images:
       - ghcr.io/vatsimnetwork/ctp-auth-sso
@@ -30,4 +30,3 @@ dockers_v2:
       - "latest"
     platforms:
       - linux/amd64
-      - linux/arm64/v8
