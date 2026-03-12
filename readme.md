@@ -47,6 +47,7 @@ GET /internal/session/validate
 | `X-Internal-Key` | Shared secret (`INTERNAL_API_KEY`) |
 | `Cookie` | The user's `session_id` cookie, forwarded as-is |
 | `User-Agent` | The user's actual User-Agent string — used for fingerprint verification |
+| `X-Forwarded-For` | The user's real IP address |
 
 **Success response — `200 OK`:**
 
@@ -81,7 +82,7 @@ All error responses have the shape:
 
 ### Code Samples
 
-The pattern is the same in every language: read the `session_id` cookie from the incoming request, then proxy it along with the user's `User-Agent` to the validate endpoint.
+The pattern is the same in every language: read the `session_id` cookie from the incoming request, then proxy it along with the user's `User-Agent` and real IP to the validate endpoint.
 
 #### Go
 
@@ -117,6 +118,7 @@ func validateSession(r *http.Request) (*SessionResponse, error) {
     req.Header.Set("X-Internal-Key", "your-internal-api-key")
     req.Header.Set("Cookie", "session_id="+sessionCookie.Value)
     req.Header.Set("User-Agent", r.Header.Get("User-Agent"))
+    req.Header.Set("X-Forwarded-For", r.RemoteAddr)
 
     resp, err := http.DefaultClient.Do(req)
     if err != nil {
@@ -164,6 +166,7 @@ def validate_session(request: Request) -> dict:
             "X-Internal-Key": INTERNAL_API_KEY,
             "Cookie": f"session_id={session_id}",
             "User-Agent": request.headers.get("user-agent", ""),
+            "X-Forwarded-For": request.client.host,
         },
     )
 
@@ -194,6 +197,7 @@ async function validateSession(req) {
       'X-Internal-Key': INTERNAL_API_KEY,
       'Cookie': `session_id=${sessionId}`,
       'User-Agent': req.headers['user-agent'] ?? '',
+      'X-Forwarded-For': req.ip ?? req.socket.remoteAddress ?? '',
     },
   })
 
@@ -217,6 +221,8 @@ INTERNAL_ALLOWLIST=10.0.0.0/8,192.168.1.50,172.16.*
 
 Supported formats: exact IP, CIDR notation, and wildcard octets (`10.0.*` is treated as `10.0.0.0/16`).
 
-### User-Agent forwarding
+### Header forwarding
 
-The `User-Agent` header **must** be forwarded from the original user request. The SSO service stores a fingerprint of the UA at session creation time and compares it on every validate call. Sending a different or empty UA will result in a `session_hijack_detected` error and the session will not validate.
+`User-Agent` and `X-Forwarded-For` **must** be forwarded from the original user request.
+
+The SSO service stores a UA fingerprint at session creation time and compares it on every validate call — a mismatch returns `session_hijack_detected`. The `X-Forwarded-For` header is required because the request chain is `trusted proxy → downstream service → SSO`. From the SSO service's perspective the downstream service is the direct caller, so `c.IP()` would resolve to the downstream service's IP without this header. The downstream service's IP must be configured as a trusted proxy in Fiber for `c.IP()` to correctly read `X-Forwarded-For`.
