@@ -23,6 +23,7 @@ Binary: https://github.com/tailwindlabs/tailwindcss/releases
 | `VATSIM_CLIENT_SECRET` | — | VATSIM OAuth client secret |
 | `VATSIM_BASE_URL` | — | VATSIM OAuth base URL |
 | `INTERNAL_API_KEY` | — | Secret for downstream service authentication |
+| `STATE_TOKEN_SECRET` | — | HMAC key for signing OAuth state and reauth tokens — `openssl rand -hex 32` |
 | `INTERNAL_ALLOWLIST` | `""` | CSV of IPs/CIDRs allowed to call the validate endpoint. Empty = no restriction |
 | `COOKIE_DOMAIN` | `""` | Cookie domain attribute. Set to `.example.com` to share across subdomains |
 | `SESSION_LIFETIME_DAYS` | `14` | Maximum session age |

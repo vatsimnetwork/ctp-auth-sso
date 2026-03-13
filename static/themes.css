@@ -22,10 +22,15 @@
 @theme {
   --font-sans: "Ubuntu", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
+  /* VATSIM brand */
+  --color-vatsim-indigo: #2A3B90;
+  --color-vatsim-blue:   #2783C5;
+  --color-vatsim-green:  #29B473;
+
   /* Dark: Graphite Pro */
   --color-gp-bg:      #18181b;
   --color-gp-surface: #27272a;
-  --color-gp-primary: #a855f7;
+  --color-gp-primary: #2783C5;
   --color-gp-text:    #fafafa;
   --color-gp-muted:   #a1a1aa;
   --color-gp-border:  #3f3f46;
@@ -33,7 +38,7 @@
   /* Light: Alabaster Pure */
   --color-ap-bg:      #fcfcfc;
   --color-ap-surface: #ffffff;
-  --color-ap-primary: #1d4ed8;
+  --color-ap-primary: #2A3B90;
   --color-ap-text:    #1e293b;
   --color-ap-muted:   #64748b;
   --color-ap-border:  #e2e8f0;

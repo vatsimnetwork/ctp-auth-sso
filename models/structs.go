@@ -32,6 +32,15 @@ type Session struct {
 	Token      string `gorm:"-"`
 }
 
+type APIKey struct {
+	ID        uint   `gorm:"primaryKey;autoIncrement"`
+	Name      string `gorm:"not null"`
+	KeyHash   string `gorm:"uniqueIndex;not null"`
+	RateLimit int    `gorm:"not null"`
+	CreatedAt time.Time
+	RawKey    string `gorm:"-"`
+}
+
 type VatsimUser struct {
 	CID      string
 	FullName string

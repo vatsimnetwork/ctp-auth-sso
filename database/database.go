@@ -29,7 +29,7 @@ func Connect() {
 
 	log.Info().Msg("running migrations...")
 
-	if err := DB.AutoMigrate(&models.User{}, &models.Session{}, &models.Role{}); err != nil {
+	if err := DB.AutoMigrate(&models.User{}, &models.Session{}, &models.Role{}, &models.APIKey{}); err != nil {
 		log.Fatal().Err(err).Msg("automigrate failed")
 	}
 

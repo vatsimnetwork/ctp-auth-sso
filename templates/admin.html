@@ -34,13 +34,30 @@
 
   <!-- Content -->
   <main class="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
+
+    {{if .NewAPIKey}}
+    <!-- New key banner -->
+    <div class="mb-6 px-4 py-3 rounded-md border border-ap-primary dark:border-gp-primary bg-ap-surface dark:bg-gp-surface">
+      <p class="text-xs text-ap-muted dark:text-gp-muted mb-1">New API key — copy it now, it will not be shown again.</p>
+      <div class="flex items-center gap-3">
+        <span id="new-api-key-value" class="font-mono text-sm text-ap-text dark:text-gp-text break-all">{{.NewAPIKey}}</span>
+        <button
+          type="button"
+          data-copy-key
+          class="flex-shrink-0 text-xs text-ap-muted dark:text-gp-muted hover:text-ap-text dark:hover:text-gp-text transition-colors duration-100"
+        >Copy</button>
+      </div>
+    </div>
+    {{end}}
+
     <div class="flex gap-8 items-start">
 
       <!-- Left: roles list -->
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center justify-between mb-4">
-          <span class="text-sm font-medium">Roles</span>
-        </div>
+      <div class="flex-1 min-w-0 flex flex-col gap-8">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-medium">Roles</span>
+          </div>
 
         {{if .Roles}}
         <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
@@ -105,6 +122,38 @@
         {{else}}
         <p class="text-sm text-ap-muted dark:text-gp-muted">No roles yet.</p>
         {{end}}
+        </div>
+
+        <!-- API keys list -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-medium">API Keys</span>
+          </div>
+
+          {{if .APIKeys}}
+          <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+            {{range .APIKeys}}
+            <div class="flex items-center justify-between px-4 py-2 bg-ap-surface dark:bg-gp-surface">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-sm">{{.Name}}</span>
+                <span class="text-xs text-ap-muted dark:text-gp-muted">{{.RateLimit}} req/min &middot; created {{.CreatedAt.Format "2006-01-02"}}</span>
+              </div>
+              <form method="POST" action="/admin/apikeys/revoke">
+                <input type="hidden" name="id" value="{{.ID}}" />
+                <button
+                  type="submit"
+                  data-confirm="Revoke API key &quot;{{.Name}}&quot;? Services using it will stop working immediately."
+                  class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                >Revoke</button>
+              </form>
+            </div>
+            {{end}}
+          </div>
+          {{else}}
+          <p class="text-sm text-ap-muted dark:text-gp-muted">No API keys yet.</p>
+          {{end}}
+        </div>
+
       </div>
 
       <!-- Right: action forms -->
@@ -162,6 +211,43 @@
                 name="name"
                 type="text"
                 placeholder="event_staff"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              />
+            </div>
+            <button
+              type="submit"
+              class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border text-ap-text dark:text-gp-text hover:border-ap-primary dark:hover:border-gp-primary transition-colors duration-100"
+            >Create</button>
+          </form>
+        </div>
+
+        <!-- Create new API key -->
+        <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+            <span class="text-sm font-medium">New API key</span>
+          </div>
+           <form method="POST" action="/admin/apikeys/create" class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="new-key-name">Name</label>
+              <input
+                id="new-key-name"
+                name="name"
+                type="text"
+                placeholder="my-service"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="new-key-rate-limit">Rate limit (req/min)</label>
+              <input
+                id="new-key-rate-limit"
+                name="rate_limit"
+                type="number"
+                min="1"
+                max="100000"
+                placeholder="60"
                 required
                 class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
               />

@@ -99,14 +99,21 @@ func main() {
 	admin.Post("/roles/delete", middleware.OriginCheck, handlers.AdminDeleteRole)
 	admin.Post("/roles/assign", middleware.OriginCheck, handlers.AdminAssignRole)
 	admin.Post("/roles/remove", middleware.OriginCheck, handlers.AdminRemoveRole)
+	admin.Post("/apikeys/create", middleware.OriginCheck, handlers.AdminCreateAPIKey)
+	admin.Post("/apikeys/revoke", middleware.OriginCheck, handlers.AdminRevokeAPIKey)
 
 	if len(config.C.InternalAllowlist) > 0 {
 		app.Get("/internal/session/validate",
 			middleware.IPAllowlist(config.C.InternalAllowlist),
 			handlers.ValidateSession,
 		)
+		app.Get("/internal/apikey/validate",
+			middleware.IPAllowlist(config.C.InternalAllowlist),
+			handlers.ValidateAPIKey,
+		)
 	} else {
 		app.Get("/internal/session/validate", handlers.ValidateSession)
+		app.Get("/internal/apikey/validate", handlers.ValidateAPIKey)
 	}
 
 	addr := fmt.Sprintf(":%s", config.C.AppPort)

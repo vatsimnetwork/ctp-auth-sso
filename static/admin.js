@@ -7,4 +7,15 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
+
+  var copyBtn = document.querySelector('[data-copy-key]');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var val = document.getElementById('new-api-key-value').textContent.trim();
+      navigator.clipboard.writeText(val).then(function () {
+        copyBtn.textContent = 'Copied';
+        setTimeout(function () { copyBtn.textContent = 'Copy'; }, 2000);
+      });
+    });
+  }
 });

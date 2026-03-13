@@ -3,11 +3,13 @@ package handlers
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/vatsimnetwork/ctp-auth-sso/config"
+	"github.com/vatsimnetwork/ctp-auth-sso/models"
 	"github.com/vatsimnetwork/ctp-auth-sso/services"
 )
 
@@ -24,8 +26,14 @@ func validateRoleName(name string) bool {
 	return name != "" && utf8.RuneCountInString(name) <= 64 && reRoleName.MatchString(name)
 }
 
+func validateKeyName(name string) bool {
+	return name != "" && utf8.RuneCountInString(name) <= 64
+}
+
 type adminPageData struct {
 	Roles      []services.RoleWithUsers
+	APIKeys    []models.APIKey
+	NewAPIKey  string
 	AdminCID   string
 	SessionCID string
 	Version    int64
@@ -38,8 +46,16 @@ func AdminPanel(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
 
+	keys, err := services.ListAPIKeys()
+	if err != nil {
+		log.Error().Err(err).Msg("admin: failed to list api keys")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
 	data := adminPageData{
 		Roles:      roles,
+		APIKeys:    keys,
+		NewAPIKey:  c.Query("new_key"),
 		AdminCID:   config.C.AdminCID,
 		SessionCID: c.Locals("adminCID").(string),
 		Version:    startupVersion,
@@ -136,5 +152,46 @@ func AdminRemoveRole(c fiber.Ctx) error {
 	}
 
 	log.Info().Str("cid", cid).Str("role", role).Str("by", c.Locals("adminCID").(string)).Msg("admin: role removed")
+	return c.Redirect().To("/admin")
+}
+
+func AdminCreateAPIKey(c fiber.Ctx) error {
+	name := c.FormValue("name")
+	if !validateKeyName(name) {
+		return c.Status(fiber.StatusBadRequest).SendString("key name must be 1–64 characters")
+	}
+
+	rlRaw := c.FormValue("rate_limit")
+	rateLimit, err := strconv.Atoi(rlRaw)
+	if err != nil || rateLimit < 1 || rateLimit > 100000 {
+		return c.Status(fiber.StatusBadRequest).SendString("rate limit must be a number between 1 and 100000")
+	}
+
+	key, err := services.CreateAPIKey(name, rateLimit)
+	if err != nil {
+		log.Error().Err(err).Str("name", name).Msg("admin: failed to create api key")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
+	log.Info().Str("name", name).Int("rate_limit", rateLimit).Str("by", c.Locals("adminCID").(string)).Msg("admin: api key created")
+	return c.Redirect().To("/admin?new_key=" + key.RawKey)
+}
+
+func AdminRevokeAPIKey(c fiber.Ctx) error {
+	raw := c.FormValue("id")
+	id, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || id == 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("invalid key id")
+	}
+
+	if err := services.RevokeAPIKey(uint(id)); err != nil {
+		if errors.Is(err, services.ErrAPIKeyNotFound) {
+			return c.Status(fiber.StatusNotFound).SendString("api key not found")
+		}
+		log.Error().Err(err).Uint64("id", id).Msg("admin: failed to revoke api key")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
+	log.Info().Uint64("id", id).Str("by", c.Locals("adminCID").(string)).Msg("admin: api key revoked")
 	return c.Redirect().To("/admin")
 }
