@@ -212,6 +212,44 @@ async function validateSession(req) {
 }
 ```
 
+#### C#
+
+```csharp
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
+
+public record SessionResponse(string Cid, string[] Roles);
+public record SessionError(string Error, string Message);
+
+private static readonly HttpClient Http = new();
+
+private const string SsoUrl = "https://sso.example.com/internal/session/validate";
+private const string InternalApiKey = "your-internal-api-key";
+
+public static async Task<SessionResponse> ValidateSessionAsync(HttpRequest request)
+{
+    if (!request.Cookies.TryGetValue("session_id", out var sessionId) || string.IsNullOrEmpty(sessionId))
+        throw new UnauthorizedAccessException("no session_id cookie");
+
+    var req = new HttpRequestMessage(HttpMethod.Get, SsoUrl);
+    req.Headers.Add("X-Internal-Key", InternalApiKey);
+    req.Headers.Add("Cookie", $"session_id={sessionId}");
+    req.Headers.Add("User-Agent", request.Headers.UserAgent.ToString());
+    req.Headers.Add("X-Forwarded-For", request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+
+    var resp = await Http.SendAsync(req);
+
+    if (!resp.IsSuccessStatusCode)
+    {
+        var error = await resp.Content.ReadFromJsonAsync<SessionError>();
+        throw new UnauthorizedAccessException($"session invalid: {error?.Error}");
+    }
+
+    return await resp.Content.ReadFromJsonAsync<SessionResponse>()
+        ?? throw new InvalidOperationException("empty response from SSO");
+}
+```
+
 ### IP Allowlisting
 
 If `INTERNAL_ALLOWLIST` is set, only requests from listed IPs reach the endpoint. All others receive `403` before the API key is checked. Configure it as a comma-separated list:
