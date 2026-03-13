@@ -7,7 +7,7 @@ VATSIM OAuth SSO service for CTP. Handles login, session management, and provide
 ### Tailwind CSS
 
 ```
-./tailwindcss -i themes.css -o static/tailwind.css --content "templates/**/*.html" --minify --watch
+./tailwindcss -i static/themes.css -o static/tailwind.css --content "templates/**/*.html" --minify --watch
 ```
 
 Binary: https://github.com/tailwindlabs/tailwindcss/releases
