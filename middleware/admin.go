@@ -22,7 +22,7 @@ func RequireAdmin(c fiber.Ctx) error {
 		return c.Redirect().To("/")
 	}
 
-	if !services.IsAdministrator(user.CID) {
+	if !services.UserIsAdministrator(user) {
 		return c.Status(fiber.StatusForbidden).SendString("forbidden")
 	}
 

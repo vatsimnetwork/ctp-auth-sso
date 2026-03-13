@@ -38,6 +38,18 @@ func IsAdministrator(cid string) bool {
 	return false
 }
 
+func UserIsAdministrator(user *models.User) bool {
+	if config.C.AdminCID != "" && user.CID == config.C.AdminCID {
+		return true
+	}
+	for _, r := range user.Roles {
+		if r.Name == administratorRole {
+			return true
+		}
+	}
+	return false
+}
+
 func ListRoles() ([]models.Role, error) {
 	var roles []models.Role
 	if err := database.DB.Order("name").Find(&roles).Error; err != nil {
@@ -53,20 +65,13 @@ type RoleWithUsers struct {
 
 func ListRolesWithUsers() ([]RoleWithUsers, error) {
 	var roles []models.Role
-	if err := database.DB.Order("name").Find(&roles).Error; err != nil {
+	if err := database.DB.Order("name").Preload("Users").Find(&roles).Error; err != nil {
 		return nil, fmt.Errorf("listing roles: %w", err)
 	}
 
 	result := make([]RoleWithUsers, len(roles))
 	for i, role := range roles {
-		var users []models.User
-		if err := database.DB.
-			Joins("JOIN user_roles ON user_roles.user_id = users.id").
-			Where("user_roles.role_id = ?", role.ID).
-			Find(&users).Error; err != nil {
-			return nil, fmt.Errorf("listing users for role %s: %w", role.Name, err)
-		}
-		result[i] = RoleWithUsers{Role: role, Users: users}
+		result[i] = RoleWithUsers{Role: role, Users: role.Users}
 	}
 	return result, nil
 }

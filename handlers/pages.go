@@ -43,7 +43,7 @@ func Index(c fiber.Ctx) error {
 			data.LoggedIn = true
 			data.UserName = user.FullName
 			data.CID = user.CID
-			data.IsAdmin = services.IsAdministrator(user.CID)
+			data.IsAdmin = services.UserIsAdministrator(user)
 		}
 	}
 

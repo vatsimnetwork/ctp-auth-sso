@@ -13,6 +13,8 @@ import (
 	"github.com/vatsimnetwork/ctp-auth-sso/models"
 )
 
+var oauthClient = &http.Client{Timeout: 10 * time.Second}
+
 func AuthorizeURL(state string) string {
 	params := url.Values{}
 	params.Set("response_type", "code")
@@ -35,8 +37,7 @@ func ExchangeCodeAndFetchUser(code string) (*models.VatsimUser, error) {
 	form.Set("redirect_uri", config.C.VatsimRedirectURI)
 	form.Set("code", code)
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Post(endpoint, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
+	resp, err := oauthClient.Post(endpoint, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("token exchange request failed: %w", err)
 	}
@@ -69,8 +70,7 @@ func getUserInfo(accessToken string) (*models.VatsimUser, error) {
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := oauthClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("user info request failed: %w", err)
 	}

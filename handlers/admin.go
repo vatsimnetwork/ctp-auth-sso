@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/gofiber/fiber/v3"
@@ -40,15 +41,34 @@ type adminPageData struct {
 }
 
 func AdminPanel(c fiber.Ctx) error {
-	roles, err := services.ListRolesWithUsers()
-	if err != nil {
-		log.Error().Err(err).Msg("admin: failed to list roles")
+	var (
+		roles    []services.RoleWithUsers
+		keys     []models.APIKey
+		rolesErr error
+		keysErr  error
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		roles, rolesErr = services.ListRolesWithUsers()
+	}()
+
+	go func() {
+		defer wg.Done()
+		keys, keysErr = services.ListAPIKeys()
+	}()
+
+	wg.Wait()
+
+	if rolesErr != nil {
+		log.Error().Err(rolesErr).Msg("admin: failed to list roles")
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
-
-	keys, err := services.ListAPIKeys()
-	if err != nil {
-		log.Error().Err(err).Msg("admin: failed to list api keys")
+	if keysErr != nil {
+		log.Error().Err(keysErr).Msg("admin: failed to list api keys")
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
 
