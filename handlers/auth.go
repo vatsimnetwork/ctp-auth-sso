@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/subtle"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -33,6 +34,46 @@ func Login(c fiber.Ctx) error {
 	setStateCookie(c, state)
 
 	return c.Redirect().To(services.AuthorizeURL(state))
+}
+
+func Redirect(c fiber.Ctx) error {
+	returnTo := c.Query("return_to")
+	if returnTo == "" {
+		return c.Redirect().To("/auth/login")
+	}
+
+	if !isAllowedReturnTo(returnTo) {
+		log.Warn().Str("return_to", returnTo).Str("ip", c.IP()).Msg("redirect: disallowed return_to origin")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "bad_request",
+			"message": "return_to origin is not allowed",
+		})
+	}
+
+	SetReturnToCookie(c, returnTo)
+
+	state, err := services.GenerateStateToken()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate state token")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "internal_error",
+			"message": "could not initiate login",
+		})
+	}
+
+	setStateCookie(c, state)
+
+	return c.Redirect().To(services.AuthorizeURL(state))
+}
+
+func isAllowedReturnTo(rawURL string) bool {
+	for _, allowed := range config.C.RedirectAllowlist {
+		allowed = strings.TrimRight(allowed, "/")
+		if strings.HasPrefix(rawURL, allowed+"/") || rawURL == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func Callback(c fiber.Ctx) error {
@@ -109,6 +150,9 @@ func Callback(c fiber.Ctx) error {
 
 	returnTo := c.Cookies(returnToCookieName)
 	clearReturnToCookie(c)
+	if strings.HasPrefix(returnTo, "http") && isAllowedReturnTo(returnTo) {
+		return c.Redirect().To(returnTo)
+	}
 	if returnTo == "/admin" || returnTo == "/admin/" {
 		return c.Redirect().To(returnTo)
 	}

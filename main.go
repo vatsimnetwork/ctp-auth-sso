@@ -90,6 +90,7 @@ func main() {
 
 	app.Get("/", handlers.Index)
 	app.Get("/auth/login", authLimiter, handlers.Login)
+	app.Get("/auth/redirect", authLimiter, handlers.Redirect)
 	app.Get("/auth/callback", authLimiter, handlers.Callback)
 	app.Post("/auth/logout", authLimiter, middleware.OriginCheck, handlers.Logout)
 

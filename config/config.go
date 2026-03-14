@@ -37,6 +37,9 @@ type Config struct {
 	// IPs that can validate Sessions
 	InternalAllowlist []string
 
+	// Origins allowed as return_to destinations after login
+	RedirectAllowlist []string
+
 	AdminCID string
 
 	TrustedProxies []string
@@ -79,6 +82,7 @@ func Load() {
 		InternalAPIKey:    requireEnv("INTERNAL_API_KEY"),
 		StateTokenSecret:  requireEnv("STATE_TOKEN_SECRET"),
 		InternalAllowlist: splitCSV(getEnv("INTERNAL_ALLOWLIST", "")),
+		RedirectAllowlist: splitCSV(getEnv("REDIRECT_ALLOWLIST", "")),
 
 		AdminCID: getEnv("ADMIN_CID", ""),
 
@@ -97,6 +101,7 @@ func Load() {
 		Str("port", C.AppPort).
 		Int("services", len(C.Services)).
 		Int("internal_allowlist", len(C.InternalAllowlist)).
+		Int("redirect_allowlist", len(C.RedirectAllowlist)).
 		Int("trusted_proxies", len(C.TrustedProxies)).
 		Msg("config loaded")
 }
