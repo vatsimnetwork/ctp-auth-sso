@@ -4,6 +4,36 @@ VATSIM OAuth SSO service for CTP. Handles login, session management, and provide
 
 ## Development
 
+### Fast setup (Docker)
+
+The quickest way to get the full stack running locally is via Docker Compose. This spins up Postgres, the SSO service pulled from GHCR, and Caddy as a reverse proxy — no local Go toolchain required.
+
+**1. Copy and configure the compose file**
+
+```
+cp docker-compose-dev.example.yml docker-compose-dev.yml
+```
+
+Edit `docker-compose-dev.yml` and fill in your VATSIM OAuth credentials and any other values marked `change_me`.
+
+**2. Start the stack**
+
+```
+docker compose -f docker-compose-dev.yml up -d
+```
+
+The service will be available at `http://localhost:3000`.
+
+**3. Pull the latest dev image**
+
+The dev image is built manually from the `development` branch via the [dev container](/.github/workflows/dev-container.yml) GitHub Actions workflow (Actions → dev container → Run workflow). To pull the latest:
+
+```
+docker compose -f docker-compose-dev.yml pull && docker compose -f docker-compose-dev.yml up -d
+```
+
+---
+
 ### Tailwind CSS
 
 ```

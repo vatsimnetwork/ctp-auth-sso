@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ctp-auth-sso:
+    image: ghcr.io/vatsimnetwork/ctp-auth-sso:dev-latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      APP_ENV: development
+      APP_PORT: 3001
+      APP_URL: http://localhost:3000
+
+      COOKIE_DOMAIN:
+
+      DATABASE_URL: postgres://postgres:change_me@postgres:5432/postgres?sslmode=disable
+
+      VATSIM_CLIENT_ID: your_client_id_here
+      VATSIM_CLIENT_SECRET: your_client_secret_here
+      VATSIM_REDIRECT_URI: http://localhost:3000/auth/callback
+
+      INTERNAL_API_KEY: change_me_to_a_random_secret
+      STATE_TOKEN_SECRET: change_me_openssl_rand_hex_32
+
+      REDIRECT_ALLOWLIST: http://localhost:3000
+
+      INTERNAL_ALLOWLIST: 127.0.0.1,172.16.0.0/12
+      TRUSTED_PROXIES: 172.16.0.0/12
+      PROXY_HEADER: X-Forwarded-For
+
+      ADMIN_CID:
+
+      IDLE_TIMEOUT_HOURS: 4
+      SESSION_LIFETIME_DAYS: 14
+
+      SERVICES: app
+      SERVICE_APP_NAME: App
+      SERVICE_APP_URL: http://localhost:3000/app/
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - ctp-auth-sso
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+volumes:
+  postgres_data:

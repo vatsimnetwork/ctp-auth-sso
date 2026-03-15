@@ -26,6 +26,7 @@ dockers_v2:
     extra_files:
       - templates/
       - static/
+      - favicon.ico
     images:
       - ghcr.io/vatsimnetwork/ctp-auth-sso
     tags:

@@ -13,3 +13,5 @@ static/tailwind.css
 # Session/notes files
 session.md
 SECURITY_AUDIT.md
+
+docker-compose-dev.yml

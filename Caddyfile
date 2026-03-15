@@ -1,0 +1,14 @@
+{
+	auto_https off
+	admin off
+}
+
+:3000 {
+	handle /app/* {
+		reverse_proxy yourappname:3002
+	}
+
+	handle {
+		reverse_proxy ctp-auth-sso:3001
+	}
+}
