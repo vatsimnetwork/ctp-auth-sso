@@ -32,6 +32,39 @@ The dev image is built manually from the `development` branch via the [dev conta
 docker compose -f docker-compose-dev.yml pull && docker compose -f docker-compose-dev.yml up -d
 ```
 
+**4. Connecting your own service**
+
+Caddy routes all traffic at `http://localhost:3000`. The SSO service handles everything by default, and `/app/*` is reserved for your downstream application:
+
+```
+:3000 {
+    handle /app/* {
+        reverse_proxy yourappname:3002   # your service
+    }
+    handle {
+        reverse_proxy ctp-auth-sso:3001  # SSO handles everything else
+    }
+}
+```
+
+To add your service to the stack, add it to `docker-compose-dev.yml` and make sure it is on the same Docker network. Compose puts all services in the same default network automatically, so you only need to define the service:
+
+```yaml
+services:
+  yourappname:
+    image: your-image
+    # no ports needed — Caddy reaches it by service name
+```
+
+Then update the `SERVICE_APP_URL` env var on `ctp-auth-sso` to point at your service's public path so it appears on the SSO landing page after login:
+
+```yaml
+SERVICE_APP_NAME: App
+SERVICE_APP_URL: http://localhost:3000/app/
+```
+
+Your service validates sessions by calling the internal validate endpoint — see [Session Validation for Downstream Services](#session-validation-for-downstream-services) below.
+
 ---
 
 ### Tailwind CSS
