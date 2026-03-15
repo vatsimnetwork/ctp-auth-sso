@@ -23,6 +23,9 @@ dockers_v2:
       - ctp-auth-sso
     disable: "{{ .IsSnapshot }}"
     dockerfile: Dockerfile
+    extra_files:
+      - templates/
+      - static/
     images:
       - ghcr.io/vatsimnetwork/ctp-auth-sso
     tags:
