@@ -117,7 +117,7 @@ func main() {
 		app.Get("/internal/apikey/validate", handlers.ValidateAPIKey)
 	}
 
-	addr := fmt.Sprintf(":%s", config.C.AppPort)
+	addr := fmt.Sprintf("0.0.0.0:%s", config.C.AppPort)
 	log.Info().Str("addr", addr).Str("env", config.C.AppEnv).Msg("listening")
 
 	quit := make(chan os.Signal, 1)
