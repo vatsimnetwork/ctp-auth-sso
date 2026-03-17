@@ -13,11 +13,18 @@ func IPAllowlist(patterns []string) fiber.Handler {
 	matchers := buildMatchers(patterns)
 
 	return func(c fiber.Ctx) error {
-		ip := c.IP()
-
-		parsed := net.ParseIP(ip)
+		addr := c.RequestCtx().RemoteAddr().String()
+		ipStr, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			log.Warn().Str("remote_addr", addr).Err(err).Msg("allowlist: could not parse remote address, denying")
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error":   "forbidden",
+				"message": "access denied",
+			})
+		}
+		parsed := net.ParseIP(ipStr)
 		if parsed == nil {
-			log.Warn().Str("raw_ip", ip).Msg("allowlist: could not parse request IP, denying")
+			log.Warn().Str("raw_ip", ipStr).Msg("allowlist: could not parse request IP, denying")
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error":   "forbidden",
 				"message": "access denied",
@@ -30,7 +37,7 @@ func IPAllowlist(patterns []string) fiber.Handler {
 			}
 		}
 
-		log.Warn().Str("ip", ip).Msg("allowlist: request denied")
+		log.Warn().Str("ip", ipStr).Msg("allowlist: request denied")
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error":   "forbidden",
 			"message": "access denied",
