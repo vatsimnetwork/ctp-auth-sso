@@ -4,8 +4,8 @@
 }
 
 :3000 {
-	handle /app/* {
-		reverse_proxy yourappname:3002
+	handle /routes/* {
+		reverse_proxy django-docker:8000
 	}
 
 	handle {

@@ -88,9 +88,46 @@ Binary: https://github.com/tailwindlabs/tailwindcss/releases
 | `INTERNAL_API_KEY` | — | Secret for downstream service authentication |
 | `STATE_TOKEN_SECRET` | — | HMAC key for signing OAuth state and reauth tokens — `openssl rand -hex 32` |
 | `INTERNAL_ALLOWLIST` | `""` | CSV of IPs/CIDRs allowed to call the validate endpoint. Empty = no restriction |
+| `REDIRECT_ALLOWLIST` | `""` | CSV of origin prefixes allowed as `return_to` destinations after login. Empty = no external redirects allowed |
 | `COOKIE_DOMAIN` | `""` | Cookie domain attribute. Set to `.example.com` to share across subdomains |
 | `SESSION_LIFETIME_DAYS` | `14` | Maximum session age |
 | `IDLE_TIMEOUT_HOURS` | `4` | Session idle timeout |
+
+---
+
+## Auth Redirect for Downstream Services
+
+Downstream services can initiate an SSO login flow and have the user sent back to a specific URL after authentication by linking to `/auth/redirect`.
+
+### Endpoint
+
+```
+GET /auth/redirect?return_to=<url>
+```
+
+**Query parameters:**
+
+| Parameter | Description |
+|---|---|
+| `return_to` | The URL to redirect the user to after successful login. Must match a prefix in `REDIRECT_ALLOWLIST`. |
+
+If `return_to` is missing the user is redirected to `/auth/login` without a return destination. If the origin is not in `REDIRECT_ALLOWLIST` the request is rejected with `400 Bad Request`.
+
+**Example — link from your app:**
+
+```html
+<a href="https://sso.example.com/auth/redirect?return_to=https://sso.example.com/app/dashboard">
+  Log in
+</a>
+```
+
+**Allowlist configuration:**
+
+`REDIRECT_ALLOWLIST` is a comma-separated list of allowed URL prefixes. Any `return_to` value must start with one of these (trailing slashes are ignored):
+
+```
+REDIRECT_ALLOWLIST=https://sso.example.com/app,https://other.example.com
+```
 
 ---
 
