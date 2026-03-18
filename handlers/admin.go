@@ -128,28 +128,6 @@ func AdminDeleteRole(c fiber.Ctx) error {
 	return c.Redirect().To("/admin")
 }
 
-func AdminAssignRole(c fiber.Ctx) error {
-	cid := c.FormValue("cid")
-	role := c.FormValue("role")
-	if !validateCID(cid) {
-		return c.Status(fiber.StatusBadRequest).SendString("cid must be numeric and at most 20 characters")
-	}
-	if !validateRoleName(role) {
-		return c.Status(fiber.StatusBadRequest).SendString("role name must be 1–64 lowercase alphanumeric/underscore characters")
-	}
-
-	if err := services.AssignRole(cid, role); err != nil {
-		if errors.Is(err, services.ErrRoleNotFound) {
-			return c.Status(fiber.StatusNotFound).SendString("role not found")
-		}
-		log.Error().Err(err).Str("cid", cid).Str("role", role).Msg("admin: failed to assign role")
-		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
-	}
-
-	log.Info().Str("cid", cid).Str("role", role).Str("by", c.Locals("adminCID").(string)).Msg("admin: role assigned")
-	return c.Redirect().To("/admin")
-}
-
 func AdminRemoveRole(c fiber.Ctx) error {
 	cid := c.FormValue("cid")
 	role := c.FormValue("role")
@@ -172,6 +150,79 @@ func AdminRemoveRole(c fiber.Ctx) error {
 	}
 
 	log.Info().Str("cid", cid).Str("role", role).Str("by", c.Locals("adminCID").(string)).Msg("admin: role removed")
+	return c.Redirect().To("/admin")
+}
+
+func AdminGetUserRoles(c fiber.Ctx) error {
+	cid := c.Query("cid")
+	if !validateCID(cid) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid cid"})
+	}
+	roles, err := services.GetUserRoles(cid)
+	if err != nil {
+		log.Error().Err(err).Str("cid", cid).Msg("admin: failed to get user roles")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	return c.JSON(fiber.Map{"roles": roles})
+}
+
+func AdminSetRoles(c fiber.Ctx) error {
+	cid := c.FormValue("cid")
+	if !validateCID(cid) {
+		return c.Status(fiber.StatusBadRequest).SendString("cid must be numeric and at most 20 characters")
+	}
+
+	roleValues := c.Request().PostArgs().PeekMulti("role")
+	roleNames := make([]string, 0, len(roleValues))
+	for _, rb := range roleValues {
+		role := string(rb)
+		if !validateRoleName(role) {
+			return c.Status(fiber.StatusBadRequest).SendString("role name must be 1–64 lowercase alphanumeric/underscore characters")
+		}
+		roleNames = append(roleNames, role)
+	}
+
+	if err := services.SetRoles(cid, roleNames); err != nil {
+		if errors.Is(err, services.ErrRoleNotFound) {
+			return c.Status(fiber.StatusNotFound).SendString("role not found")
+		}
+		log.Error().Err(err).Str("cid", cid).Msg("admin: failed to set roles")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
+	log.Info().Str("cid", cid).Strs("roles", roleNames).Str("by", c.Locals("adminCID").(string)).Msg("admin: roles set")
+	return c.Redirect().To("/admin")
+}
+
+func AdminBulkAssignRole(c fiber.Ctx) error {
+	role := c.FormValue("role")
+	if !validateRoleName(role) {
+		return c.Status(fiber.StatusBadRequest).SendString("role name must be 1–64 lowercase alphanumeric/underscore characters")
+	}
+
+	cidValues := c.Request().PostArgs().PeekMulti("cid")
+	if len(cidValues) == 0 {
+		return c.Redirect().To("/admin")
+	}
+
+	cids := make([]string, 0, len(cidValues))
+	for _, cb := range cidValues {
+		cid := string(cb)
+		if !validateCID(cid) {
+			return c.Status(fiber.StatusBadRequest).SendString("cid must be numeric and at most 20 characters")
+		}
+		cids = append(cids, cid)
+	}
+
+	if err := services.BulkAssignRole(cids, role); err != nil {
+		if errors.Is(err, services.ErrRoleNotFound) {
+			return c.Status(fiber.StatusNotFound).SendString("role not found")
+		}
+		log.Error().Err(err).Str("role", role).Msg("admin: failed to bulk assign role")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
+	log.Info().Str("role", role).Strs("cids", cids).Str("by", c.Locals("adminCID").(string)).Msg("admin: role bulk assigned")
 	return c.Redirect().To("/admin")
 }
 

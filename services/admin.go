@@ -117,6 +117,53 @@ func DeleteRole(name string) error {
 	})
 }
 
+func GetUserRoles(cid string) ([]string, error) {
+	var user models.User
+	err := database.DB.Preload("Roles").Where(&models.User{CID: cid}).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return []string{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("finding user: %w", err)
+	}
+	names := make([]string, len(user.Roles))
+	for i, r := range user.Roles {
+		names[i] = r.Name
+	}
+	return names, nil
+}
+
+func SetRoles(cid string, roleNames []string) error {
+	var user models.User
+	err := database.DB.Preload("Roles").Where(&models.User{CID: cid}).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		if len(roleNames) == 0 {
+			return nil
+		}
+		user = models.User{CID: cid}
+		if err := database.DB.Create(&user).Error; err != nil {
+			return fmt.Errorf("creating stub user: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("finding user: %w", err)
+	}
+
+	var roles []models.Role
+	if len(roleNames) > 0 {
+		if err := database.DB.Where("name IN ?", roleNames).Find(&roles).Error; err != nil {
+			return fmt.Errorf("finding roles: %w", err)
+		}
+		if len(roles) != len(roleNames) {
+			return ErrRoleNotFound
+		}
+	}
+
+	if err := database.DB.Model(&user).Association("Roles").Replace(&roles); err != nil {
+		return fmt.Errorf("setting roles: %w", err)
+	}
+	return nil
+}
+
 func AssignRole(cid, roleName string) error {
 	var user models.User
 	err := database.DB.Where(&models.User{CID: cid}).First(&user).Error
@@ -140,6 +187,34 @@ func AssignRole(cid, roleName string) error {
 
 	if err := database.DB.Model(&user).Association("Roles").Append(&role); err != nil {
 		return fmt.Errorf("assigning role: %w", err)
+	}
+	return nil
+}
+
+func BulkAssignRole(cids []string, roleName string) error {
+	var role models.Role
+	err := database.DB.Where("name = ?", roleName).First(&role).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrRoleNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("finding role: %w", err)
+	}
+
+	for _, cid := range cids {
+		var user models.User
+		err := database.DB.Where(&models.User{CID: cid}).First(&user).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			user = models.User{CID: cid}
+			if err := database.DB.Create(&user).Error; err != nil {
+				return fmt.Errorf("creating stub user %s: %w", cid, err)
+			}
+		} else if err != nil {
+			return fmt.Errorf("finding user %s: %w", cid, err)
+		}
+		if err := database.DB.Model(&user).Association("Roles").Append(&role); err != nil {
+			return fmt.Errorf("assigning role to %s: %w", cid, err)
+		}
 	}
 	return nil
 }

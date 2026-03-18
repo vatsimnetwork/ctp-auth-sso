@@ -159,30 +159,40 @@
       <!-- Right: action forms -->
       <div class="w-72 flex-shrink-0 flex flex-col gap-6">
 
-        <!-- Assign role to CID -->
+        <!-- Manage user roles -->
         <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
           <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
-            <span class="text-sm font-medium">Assign role</span>
+            <span class="text-sm font-medium">Manage roles</span>
           </div>
-          <form method="POST" action="/admin/roles/assign" class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
+          <div class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-ap-muted dark:text-gp-muted" for="assign-cid">CID</label>
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="manage-cid">CID</label>
               <input
-                id="assign-cid"
-                name="cid"
+                id="manage-cid"
                 type="text"
                 placeholder="1234567"
-                required
                 class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
               />
               <span class="text-xs text-ap-muted dark:text-gp-muted">Name will appear after first login.</span>
             </div>
+            <button
+              type="button"
+              id="edit-roles-btn"
+              class="px-3 py-1.5 text-sm rounded-md bg-ap-primary dark:bg-gp-primary text-white hover:opacity-90 transition-opacity duration-100"
+            >Edit roles</button>
+          </div>
+        </div>
+
+        <!-- Bulk add role -->
+        <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+            <span class="text-sm font-medium">Bulk add</span>
+          </div>
+          <div class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-ap-muted dark:text-gp-muted" for="assign-role">Role</label>
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="bulk-role">Role</label>
               <select
-                id="assign-role"
-                name="role"
-                required
+                id="bulk-role"
                 class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
               >
                 <option value="" disabled selected>Select a role</option>
@@ -192,10 +202,11 @@
               </select>
             </div>
             <button
-              type="submit"
+              type="button"
+              id="bulk-add-btn"
               class="px-3 py-1.5 text-sm rounded-md bg-ap-primary dark:bg-gp-primary text-white hover:opacity-90 transition-opacity duration-100"
-            >Assign</button>
-          </form>
+            >Bulk add</button>
+          </div>
         </div>
 
         <!-- Create new role -->
@@ -263,6 +274,52 @@
     </div>
   </main>
 
+  <!-- Role manager modal -->
+  <div id="role-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div class="absolute inset-0 bg-black/50" id="role-modal-backdrop"></div>
+    <div class="relative bg-ap-bg dark:bg-gp-bg border border-ap-border dark:border-gp-border rounded-md w-88 overflow-hidden">
+      <div class="pl-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface flex items-center justify-between">
+        <span class="text-sm font-medium">Roles &mdash; <span id="role-modal-cid-label" class="font-mono"></span></span>
+        <button type="button" id="role-modal-close" class="self-stretch w-12 flex items-center justify-center text-ap-muted dark:text-gp-muted hover:text-ap-text dark:hover:text-gp-text transition-colors duration-100">&times;</button>
+      </div>
+      <form method="POST" action="/admin/roles/set" class="flex flex-col bg-ap-bg dark:bg-gp-bg">
+        <input type="hidden" name="cid" id="role-modal-cid-input" />
+        <div id="role-modal-checkboxes" class="divide-y divide-ap-border dark:divide-gp-border"></div>
+        <div class="px-4 py-3 border-t border-ap-border dark:border-gp-border">
+          <button type="submit" class="w-full py-1.5 text-sm rounded-md bg-vatsim-green text-white hover:opacity-90 transition-opacity duration-100">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bulk add modal -->
+  <div id="bulk-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div class="absolute inset-0 bg-black/50" id="bulk-modal-backdrop"></div>
+    <div class="relative bg-ap-bg dark:bg-gp-bg border border-ap-border dark:border-gp-border rounded-md w-88 overflow-hidden">
+      <div class="pl-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface flex items-center justify-between">
+        <span class="text-sm font-medium">Bulk add &mdash; <span id="bulk-modal-role-label" class="font-mono"></span></span>
+        <button type="button" id="bulk-modal-close" class="self-stretch w-12 flex items-center justify-center text-ap-muted dark:text-gp-muted hover:text-ap-text dark:hover:text-gp-text transition-colors duration-100">&times;</button>
+      </div>
+      <form method="POST" action="/admin/roles/bulk-assign" class="flex flex-col bg-ap-bg dark:bg-gp-bg">
+        <input type="hidden" name="role" id="bulk-modal-role-input" />
+        <div id="bulk-cid-list" class="divide-y divide-ap-border dark:divide-gp-border"></div>
+        <div class="px-4 py-3 border-t border-ap-border dark:border-gp-border flex gap-2">
+          <input
+            id="bulk-cid-input"
+            type="text"
+            placeholder="Enter CID..."
+            class="flex-1 px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+          />
+          <button type="button" id="bulk-cid-add-btn" class="px-3 py-1.5 text-sm rounded-md bg-ap-primary dark:bg-gp-primary text-white hover:opacity-90 transition-opacity duration-100">Add</button>
+        </div>
+        <div class="px-4 py-3 border-t border-ap-border dark:border-gp-border">
+          <button type="submit" class="w-full py-1.5 text-sm rounded-md bg-vatsim-green text-white hover:opacity-90 transition-opacity duration-100">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="role-data" data-roles='[{{range $i, $r := .Roles}}{{if $i}},{{end}}"{{$r.Name}}"{{end}}]' hidden></div>
   <script src="/static/admin.js?v={{.Version}}"></script>
 </body>
 </html>

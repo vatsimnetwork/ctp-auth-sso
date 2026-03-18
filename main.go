@@ -2,24 +2,61 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
+	"mime"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/tdewolff/minify/v2"
+	minifyjs "github.com/tdewolff/minify/v2/js"
 	"github.com/vatsimnetwork/ctp-auth-sso/config"
 	"github.com/vatsimnetwork/ctp-auth-sso/database"
 	"github.com/vatsimnetwork/ctp-auth-sso/handlers"
 	"github.com/vatsimnetwork/ctp-auth-sso/middleware"
 	"github.com/vatsimnetwork/ctp-auth-sso/services"
 )
+
+//go:embed static
+var staticFiles embed.FS
+
+func buildAssets(fsys fs.FS) (map[string][]byte, error) {
+	m := minify.New()
+	m.AddFunc("application/javascript", minifyjs.Minify)
+
+	assets := make(map[string][]byte)
+	err := fs.WalkDir(fsys, "static", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		data, err := fs.ReadFile(fsys, path)
+		if err != nil {
+			return err
+		}
+		key := strings.TrimPrefix(path, "static/")
+		if strings.HasSuffix(path, ".js") {
+			minified, err := m.String("application/javascript", string(data))
+			if err != nil {
+				return err
+			}
+			data = []byte(minified)
+		}
+		assets[key] = data
+		return nil
+	})
+	return assets, err
+}
+
 
 func main() {
 	zerolog.TimeFieldFormat = time.RFC3339
@@ -80,11 +117,34 @@ func main() {
 
 	services.StartSessionCleanup(6 * time.Hour)
 
+	assets, err := buildAssets(staticFiles)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to build static assets")
+	}
+	log.Info().Int("count", len(assets)).Msg("static assets loaded")
+
 	app.Use(recover.New())
 	app.Use(middleware.SecurityHeaders())
 	app.Use(favicon.New(favicon.Config{File: "favicon.ico"}))
 
-	app.Use("/static", static.New("static"))
+	app.Use("/static/", func(c fiber.Ctx) error {
+		key := strings.TrimPrefix(c.Path(), "/static/")
+		data, ok := assets[key]
+		if !ok {
+			return fiber.ErrNotFound
+		}
+		ct := mime.TypeByExtension(filepath.Ext(key))
+		if ct == "" {
+			if strings.HasSuffix(key, ".js") {
+				ct = "application/javascript"
+			} else {
+				ct = "application/octet-stream"
+			}
+		}
+		c.Set("Content-Type", ct)
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.Send(data)
+	})
 
 	authLimiter := middleware.AuthLimiter()
 
@@ -98,8 +158,10 @@ func main() {
 	admin.Get("/", handlers.AdminPanel)
 	admin.Post("/roles/create", middleware.OriginCheck, handlers.AdminCreateRole)
 	admin.Post("/roles/delete", middleware.OriginCheck, handlers.AdminDeleteRole)
-	admin.Post("/roles/assign", middleware.OriginCheck, handlers.AdminAssignRole)
+	admin.Get("/users/roles", handlers.AdminGetUserRoles)
+	admin.Post("/roles/set", middleware.OriginCheck, handlers.AdminSetRoles)
 	admin.Post("/roles/remove", middleware.OriginCheck, handlers.AdminRemoveRole)
+	admin.Post("/roles/bulk-assign", middleware.OriginCheck, handlers.AdminBulkAssignRole)
 	admin.Post("/apikeys/create", middleware.OriginCheck, handlers.AdminCreateAPIKey)
 	admin.Post("/apikeys/revoke", middleware.OriginCheck, handlers.AdminRevokeAPIKey)
 
