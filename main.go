@@ -153,6 +153,7 @@ func main() {
 	app.Get("/auth/redirect", authLimiter, handlers.Redirect)
 	app.Get("/auth/callback", authLimiter, handlers.Callback)
 	app.Post("/auth/logout", authLimiter, middleware.OriginCheck, handlers.Logout)
+	app.Post("/role-requests", middleware.OriginCheck, handlers.RequestAccess)
 
 	admin := app.Group("/admin", middleware.RequireAdmin)
 	admin.Get("/", handlers.AdminPanel)
@@ -164,6 +165,8 @@ func main() {
 	admin.Post("/roles/bulk-assign", middleware.OriginCheck, handlers.AdminBulkAssignRole)
 	admin.Post("/apikeys/create", middleware.OriginCheck, handlers.AdminCreateAPIKey)
 	admin.Post("/apikeys/revoke", middleware.OriginCheck, handlers.AdminRevokeAPIKey)
+	admin.Post("/requests/approve", middleware.OriginCheck, handlers.AdminApproveRequest)
+	admin.Post("/requests/deny", middleware.OriginCheck, handlers.AdminDenyRequests)
 
 	if len(config.C.InternalAllowlist) > 0 {
 		app.Get("/internal/session/validate",

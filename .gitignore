@@ -8,7 +8,9 @@
 *.out
 
 tailwindcss.exe
+tailwindcss
 static/tailwind.css
+linux/**
 
 # Session/notes files
 session.md

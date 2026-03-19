@@ -32,24 +32,27 @@ func validateKeyName(name string) bool {
 }
 
 type adminPageData struct {
-	Roles      []services.RoleWithUsers
-	APIKeys    []models.APIKey
-	NewAPIKey  string
-	AdminCID   string
-	SessionCID string
-	Version    int64
+	Roles        []services.RoleWithUsers
+	APIKeys      []models.APIKey
+	NewAPIKey    string
+	AdminCID     string
+	SessionCID   string
+	Version      int64
+	RoleRequests []services.PendingRequestGroup
 }
 
 func AdminPanel(c fiber.Ctx) error {
 	var (
-		roles    []services.RoleWithUsers
-		keys     []models.APIKey
-		rolesErr error
-		keysErr  error
+		roles        []services.RoleWithUsers
+		keys         []models.APIKey
+		requests     []services.PendingRequestGroup
+		rolesErr     error
+		keysErr      error
+		requestsErr  error
 	)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -59,6 +62,11 @@ func AdminPanel(c fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		keys, keysErr = services.ListAPIKeys()
+	}()
+
+	go func() {
+		defer wg.Done()
+		requests, requestsErr = services.ListPendingRequestGroups()
 	}()
 
 	wg.Wait()
@@ -71,14 +79,19 @@ func AdminPanel(c fiber.Ctx) error {
 		log.Error().Err(keysErr).Msg("admin: failed to list api keys")
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
+	if requestsErr != nil {
+		log.Error().Err(requestsErr).Msg("admin: failed to list role requests")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
 
 	data := adminPageData{
-		Roles:      roles,
-		APIKeys:    keys,
-		NewAPIKey:  c.Query("new_key"),
-		AdminCID:   config.C.AdminCID,
-		SessionCID: c.Locals("adminCID").(string),
-		Version:    startupVersion,
+		Roles:        roles,
+		APIKeys:      keys,
+		NewAPIKey:    c.Query("new_key"),
+		AdminCID:     config.C.AdminCID,
+		SessionCID:   c.Locals("adminCID").(string),
+		Version:      startupVersion,
+		RoleRequests: requests,
 	}
 
 	c.Set("Content-Type", "text/html; charset=utf-8")

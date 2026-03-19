@@ -44,6 +44,11 @@ func Index(c fiber.Ctx) error {
 			data.UserName = user.FullName
 			data.CID = user.CID
 			data.IsAdmin = services.UserIsAdministrator(user)
+			if !data.IsAdmin {
+				if roles, err := services.ListRoles(); err == nil {
+					data.Roles = roles
+				}
+			}
 		}
 	}
 

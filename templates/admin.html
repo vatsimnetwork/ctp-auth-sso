@@ -54,6 +54,50 @@
 
       <!-- Left: roles list -->
       <div class="flex-1 min-w-0 flex flex-col gap-8">
+
+        {{if .RoleRequests}}
+        <!-- Pending role requests -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-medium">Pending Requests</span>
+          </div>
+          <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+            {{range .RoleRequests}}
+            <div class="bg-ap-surface dark:bg-gp-surface">
+              <div class="flex items-center justify-between px-4 py-2 border-b border-ap-border dark:border-gp-border">
+                <span class="text-sm font-medium">{{if .User.FullName}}{{.User.FullName}} &mdash; {{end}}<span class="font-mono text-ap-muted dark:text-gp-muted">{{.User.CID}}</span></span>
+                <form method="POST" action="/admin/requests/deny">
+                  <input type="hidden" name="user_id" value="{{.User.ID}}" />
+                  <button
+                    type="submit"
+                    data-confirm="Deny all pending requests from {{.User.CID}}?"
+                    class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                  >Deny all</button>
+                </form>
+              </div>
+              <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-bg dark:bg-gp-bg">
+                <span class="text-xs text-ap-muted dark:text-gp-muted">{{.Reason}}</span>
+              </div>
+              <div class="divide-y divide-ap-border dark:divide-gp-border">
+                {{range .Requests}}
+                <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                  <span class="text-sm font-mono text-ap-text dark:text-gp-text">{{.RoleName}}</span>
+                  <form method="POST" action="/admin/requests/approve">
+                    <input type="hidden" name="id" value="{{.ID}}" />
+                    <button
+                      type="submit"
+                      class="text-xs text-ap-muted dark:text-gp-muted hover:text-vatsim-green transition-colors duration-100"
+                    >Approve</button>
+                  </form>
+                </div>
+                {{end}}
+              </div>
+            </div>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+
         <div>
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm font-medium">Roles</span>

@@ -45,3 +45,13 @@ type VatsimUser struct {
 	CID      string
 	FullName string
 }
+
+type RoleRequest struct {
+	ID        uint      `gorm:"primaryKey;autoIncrement"`
+	UserID    uint      `gorm:"not null;index"`
+	User      User      `gorm:"constraint:OnDelete:CASCADE"`
+	RoleName  string    `gorm:"not null"`
+	Reason    string    `gorm:"not null"`
+	Status    string    `gorm:"not null;default:'pending'"`
+	CreatedAt time.Time
+}

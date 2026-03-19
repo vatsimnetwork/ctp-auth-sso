@@ -18,6 +18,8 @@
         <span class="text-sm text-ap-text dark:text-gp-text">{{.UserName}} ({{.CID}})</span>
         {{if .IsAdmin}}
         <a href="/admin" class="text-sm text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Admin</a>
+        {{else}}
+        <button type="button" id="request-access-btn" class="text-sm text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Request Access</button>
         {{end}}
         <form method="POST" action="/auth/logout">
           <button
@@ -43,6 +45,51 @@
       </div>
     </div>
   </header>
+
+  {{if and .LoggedIn (not .IsAdmin)}}
+  <!-- Request access modal -->
+  <div id="request-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div class="absolute inset-0 bg-black/50" id="request-modal-backdrop"></div>
+    <div class="relative bg-ap-bg dark:bg-gp-bg border border-ap-border dark:border-gp-border rounded-md w-88 overflow-hidden">
+      <div class="pl-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface flex items-center justify-between">
+        <span class="text-sm font-medium">Request Access</span>
+        <button type="button" id="request-modal-close" class="self-stretch w-12 flex items-center justify-center text-ap-muted dark:text-gp-muted hover:text-ap-text dark:hover:text-gp-text transition-colors duration-100">&times;</button>
+      </div>
+      <form method="POST" action="/role-requests" class="flex flex-col bg-ap-bg dark:bg-gp-bg">
+        {{if .Roles}}
+        <div class="divide-y divide-ap-border dark:divide-gp-border">
+          {{range .Roles}}
+          <label class="flex items-center justify-between px-4 py-2 cursor-pointer select-none">
+            <span class="text-sm text-ap-text dark:text-gp-text">{{.Name}}</span>
+            <input type="checkbox" name="role" value="{{.Name}}" class="w-3.5 h-3.5 accent-ap-primary dark:accent-gp-primary cursor-pointer" />
+          </label>
+          {{end}}
+        </div>
+        {{else}}
+        <div class="px-4 py-3">
+          <span class="text-xs text-ap-muted dark:text-gp-muted">No roles available to request.</span>
+        </div>
+        {{end}}
+        <div class="px-4 py-3 border-t border-ap-border dark:border-gp-border flex flex-col gap-1">
+          <label class="text-xs text-ap-muted dark:text-gp-muted" for="request-reason">Reason</label>
+          <textarea
+            id="request-reason"
+            name="reason"
+            rows="3"
+            required
+            maxlength="500"
+            placeholder="Briefly explain who you are and why you need this access..."
+            class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary resize-none"
+          ></textarea>
+        </div>
+        <div class="px-4 py-3 border-t border-ap-border dark:border-gp-border">
+          <button type="submit" class="w-full py-1.5 text-sm rounded-md bg-vatsim-green text-white hover:opacity-90 transition-opacity duration-100">Request Access</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="/static/requests.js?v={{.Version}}"></script>
+  {{end}}
 
   <!-- Main content -->
   <main class="flex-1 flex items-center justify-center px-6">
