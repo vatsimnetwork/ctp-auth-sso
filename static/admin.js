@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-toggle]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('form')) return;
+      var target = document.getElementById(el.getAttribute('data-toggle'));
+      if (target) target.classList.toggle('hidden');
+    });
+  });
+
   document.querySelectorAll('[data-confirm]').forEach(function (el) {
     el.addEventListener('click', function (e) {
       var msg = el.getAttribute('data-confirm');

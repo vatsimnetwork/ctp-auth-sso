@@ -56,41 +56,57 @@
       <div class="flex-1 min-w-0 flex flex-col gap-8">
 
         {{if .RoleRequests}}
-        <!-- Pending role requests -->
         <div>
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm font-medium">Pending Requests</span>
           </div>
-          <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="flex flex-col gap-2">
             {{range .RoleRequests}}
-            <div class="bg-ap-surface dark:bg-gp-surface">
-              <div class="flex items-center justify-between px-4 py-2 border-b border-ap-border dark:border-gp-border">
+            <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+              <div
+                class="flex items-center justify-between px-4 py-2 bg-ap-surface dark:bg-gp-surface cursor-pointer select-none"
+                data-toggle="req-{{.User.ID}}"
+              >
                 <span class="text-sm font-medium">{{if .User.FullName}}{{.User.FullName}} &mdash; {{end}}<span class="font-mono text-ap-muted dark:text-gp-muted">{{.User.CID}}</span></span>
-                <form method="POST" action="/admin/requests/deny">
-                  <input type="hidden" name="user_id" value="{{.User.ID}}" />
-                  <button
-                    type="submit"
-                    data-confirm="Deny all pending requests from {{.User.CID}}?"
-                    class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
-                  >Deny all</button>
-                </form>
-              </div>
-              <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-bg dark:bg-gp-bg">
-                <span class="text-xs text-ap-muted dark:text-gp-muted">{{.Reason}}</span>
-              </div>
-              <div class="divide-y divide-ap-border dark:divide-gp-border">
-                {{range .Requests}}
-                <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
-                  <span class="text-sm font-mono text-ap-text dark:text-gp-text">{{.RoleName}}</span>
-                  <form method="POST" action="/admin/requests/approve">
-                    <input type="hidden" name="id" value="{{.ID}}" />
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-ap-muted dark:text-gp-muted">{{len .Requests}} pending</span>
+                  <form method="POST" action="/admin/requests/deny">
+                    <input type="hidden" name="user_id" value="{{.User.ID}}" />
                     <button
                       type="submit"
-                      class="text-xs text-ap-muted dark:text-gp-muted hover:text-vatsim-green transition-colors duration-100"
-                    >Approve</button>
+                      data-confirm="Deny all pending requests from {{.User.CID}}?"
+                      class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                    >Deny all</button>
                   </form>
                 </div>
-                {{end}}
+              </div>
+              <div id="req-{{.User.ID}}" class="hidden">
+                <div class="px-4 py-2 border-t border-ap-border dark:border-gp-border bg-ap-bg dark:bg-gp-bg">
+                  <span class="text-xs text-ap-muted dark:text-gp-muted">&ldquo;{{.Reason}}&rdquo;</span>
+                </div>
+                <div class="divide-y divide-ap-border dark:divide-gp-border border-t border-ap-border dark:border-gp-border">
+                  {{range .Requests}}
+                  <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                    <span class="text-sm font-mono text-ap-text dark:text-gp-text">{{.RoleName}}</span>
+                    <div class="flex items-center gap-3">
+                      <form method="POST" action="/admin/requests/approve">
+                        <input type="hidden" name="id" value="{{.ID}}" />
+                        <button
+                          type="submit"
+                          class="text-xs text-ap-muted dark:text-gp-muted hover:text-vatsim-green transition-colors duration-100"
+                        >Approve</button>
+                      </form>
+                      <form method="POST" action="/admin/requests/deny-one">
+                        <input type="hidden" name="id" value="{{.ID}}" />
+                        <button
+                          type="submit"
+                          class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                        >Deny</button>
+                      </form>
+                    </div>
+                  </div>
+                  {{end}}
+                </div>
               </div>
             </div>
             {{end}}
@@ -104,62 +120,67 @@
           </div>
 
         {{if .Roles}}
-        <div class="flex flex-col divide-y divide-ap-border dark:divide-gp-border border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+        <div class="flex flex-col gap-2">
           {{range .Roles}}
           {{$roleName := .Name}}
-          <div class="bg-ap-surface dark:bg-gp-surface">
-            <!-- Role header row -->
-            <div class="flex items-center justify-between px-4 py-2">
+          {{$adminCID := $.AdminCID}}
+          {{$sessionCID := $.SessionCID}}
+          {{$isAdminRole := eq .Name "administrator"}}
+          {{$hasAdminPin := and $isAdminRole (ne $adminCID "")}}
+          <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+            <div
+              class="flex items-center justify-between px-4 py-2 bg-ap-surface dark:bg-gp-surface cursor-pointer select-none"
+              data-toggle="role-{{.Name}}"
+            >
               <span class="text-sm font-medium">{{.Name}}</span>
-              {{if ne .Name "administrator"}}
-              <form method="POST" action="/admin/roles/delete">
-                <input type="hidden" name="name" value="{{.Name}}" />
-                <button
-                  type="submit"
-                  data-confirm="Delete role &quot;{{.Name}}&quot;? This will remove it from all users."
-                  class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
-                >Delete</button>
-              </form>
-              {{end}}
-            </div>
-
-            <!-- Users in this role -->
-            {{$adminCID := $.AdminCID}}
-            {{$sessionCID := $.SessionCID}}
-            {{$isAdminRole := eq .Name "administrator"}}
-            {{$hasAdminPin := and $isAdminRole (ne $adminCID "")}}
-            {{if or .Users $hasAdminPin}}
-            <div class="border-t border-ap-border dark:border-gp-border divide-y divide-ap-border dark:divide-gp-border">
-              {{if $hasAdminPin}}
-              <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
-                <span class="text-sm text-ap-muted dark:text-gp-muted"><span class="font-mono">{{$adminCID}}</span></span>
-                <span class="text-xs text-ap-muted dark:text-gp-muted">env</span>
-              </div>
-              {{end}}
-              {{range .Users}}
-              <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
-                <span class="text-sm text-ap-muted dark:text-gp-muted">{{if .FullName}}{{.FullName}} {{end}}<span class="font-mono">{{.CID}}</span></span>
-                {{if and $isAdminRole (eq .CID $sessionCID)}}
-                <span class="text-xs text-ap-muted dark:text-gp-muted">you</span>
-                {{else}}
-                <form method="POST" action="/admin/roles/remove">
-                  <input type="hidden" name="cid" value="{{.CID}}" />
-                  <input type="hidden" name="role" value="{{$roleName}}" />
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-ap-muted dark:text-gp-muted">{{len .Users}} users</span>
+                {{if ne .Name "administrator"}}
+                <form method="POST" action="/admin/roles/delete">
+                  <input type="hidden" name="name" value="{{.Name}}" />
                   <button
                     type="submit"
-                    data-confirm="Remove {{.FullName}} from role &quot;{{$roleName}}&quot;?"
+                    data-confirm="Delete role &quot;{{.Name}}&quot;? This will remove it from all users."
                     class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
-                  >Remove</button>
+                  >Delete</button>
                 </form>
                 {{end}}
               </div>
+            </div>
+            <div id="role-{{.Name}}" class="hidden border-t border-ap-border dark:border-gp-border">
+              {{if or .Users $hasAdminPin}}
+              <div class="divide-y divide-ap-border dark:divide-gp-border">
+                {{if $hasAdminPin}}
+                <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                  <span class="text-sm text-ap-muted dark:text-gp-muted"><span class="font-mono">{{$adminCID}}</span></span>
+                  <span class="text-xs text-ap-muted dark:text-gp-muted">env</span>
+                </div>
+                {{end}}
+                {{range .Users}}
+                <div class="flex items-center justify-between px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                  <span class="text-sm text-ap-muted dark:text-gp-muted">{{if .FullName}}{{.FullName}} {{end}}<span class="font-mono">{{.CID}}</span></span>
+                  {{if and $isAdminRole (eq .CID $sessionCID)}}
+                  <span class="text-xs text-ap-muted dark:text-gp-muted">you</span>
+                  {{else}}
+                  <form method="POST" action="/admin/roles/remove">
+                    <input type="hidden" name="cid" value="{{.CID}}" />
+                    <input type="hidden" name="role" value="{{$roleName}}" />
+                    <button
+                      type="submit"
+                      data-confirm="Remove {{.FullName}} from role &quot;{{$roleName}}&quot;?"
+                      class="text-xs text-ap-muted dark:text-gp-muted hover:text-red-500 dark:hover:text-red-400 transition-colors duration-100"
+                    >Remove</button>
+                  </form>
+                  {{end}}
+                </div>
+                {{end}}
+              </div>
+              {{else}}
+              <div class="px-4 py-2 bg-ap-bg dark:bg-gp-bg">
+                <span class="text-xs text-ap-muted dark:text-gp-muted">No users assigned</span>
+              </div>
               {{end}}
             </div>
-            {{else}}
-            <div class="px-4 py-2 border-t border-ap-border dark:border-gp-border">
-              <span class="text-xs text-ap-muted dark:text-gp-muted">No users assigned</span>
-            </div>
-            {{end}}
           </div>
           {{end}}
         </div>

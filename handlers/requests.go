@@ -69,6 +69,25 @@ func AdminApproveRequest(c fiber.Ctx) error {
 	return c.Redirect().To("/admin")
 }
 
+func AdminDenySingleRequest(c fiber.Ctx) error {
+	raw := c.FormValue("id")
+	id, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || id == 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("invalid request id")
+	}
+
+	if err := services.DenySingleRequest(uint(id)); err != nil {
+		if errors.Is(err, services.ErrRequestNotFound) {
+			return c.Status(fiber.StatusNotFound).SendString("request not found")
+		}
+		log.Error().Err(err).Uint64("id", id).Msg("admin: failed to deny request")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+
+	log.Info().Uint64("id", id).Str("by", c.Locals("adminCID").(string)).Msg("admin: role request denied")
+	return c.Redirect().To("/admin")
+}
+
 func AdminDenyRequests(c fiber.Ctx) error {
 	raw := c.FormValue("user_id")
 	userID, err := strconv.ParseUint(raw, 10, 64)

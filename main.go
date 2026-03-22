@@ -166,6 +166,7 @@ func main() {
 	admin.Post("/apikeys/create", middleware.OriginCheck, handlers.AdminCreateAPIKey)
 	admin.Post("/apikeys/revoke", middleware.OriginCheck, handlers.AdminRevokeAPIKey)
 	admin.Post("/requests/approve", middleware.OriginCheck, handlers.AdminApproveRequest)
+	admin.Post("/requests/deny-one", middleware.OriginCheck, handlers.AdminDenySingleRequest)
 	admin.Post("/requests/deny", middleware.OriginCheck, handlers.AdminDenyRequests)
 
 	if len(config.C.InternalAllowlist) > 0 {

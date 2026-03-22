@@ -95,3 +95,16 @@ func DenyUserRequests(userID uint) error {
 	}
 	return nil
 }
+
+func DenySingleRequest(id uint) error {
+	result := database.DB.Model(&models.RoleRequest{}).
+		Where("id = ? AND status = 'pending'", id).
+		Update("status", "denied")
+	if result.Error != nil {
+		return fmt.Errorf("denying request: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrRequestNotFound
+	}
+	return nil
+}
