@@ -52,9 +52,17 @@ func ValidateSession(c fiber.Ctx) error {
 
 	log.Debug().Str("session", services.ShortID(sessionID)).Str("cid", user.CID).Msg("session valid")
 
+	addedAdmin := false
 	roles := make([]string, len(user.Roles))
 	for i, r := range user.Roles {
 		roles[i] = r.Name
+		if r.Name == "administrator" {
+			addedAdmin = true
+		}
+	}
+
+	if user.CID == config.C.AdminCID && !addedAdmin {
+		roles = append(roles, "administrator")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
