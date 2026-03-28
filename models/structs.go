@@ -37,7 +37,7 @@ type APIKey struct {
 	Name      string `gorm:"not null"`
 	KeyHash   string `gorm:"uniqueIndex;not null"`
 	RateLimit int    `gorm:"not null"`
-	ReadOnly  bool   `gorm:"not null"`
+	ReadOnly  bool   `gorm:"not null;default:false"`
 	CreatedAt time.Time
 	RawKey    string `gorm:"-"`
 }
