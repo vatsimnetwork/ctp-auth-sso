@@ -201,7 +201,7 @@
             <div class="flex items-center justify-between px-4 py-2 bg-ap-surface dark:bg-gp-surface">
               <div class="flex flex-col gap-0.5">
                 <span class="text-sm">{{.Name}}</span>
-                <span class="text-xs text-ap-muted dark:text-gp-muted">{{.RateLimit}} req/min &middot; created {{.CreatedAt.Format "2006-01-02"}}</span>
+                <span class="text-xs text-ap-muted dark:text-gp-muted">{{if .ReadOnly}}read-only{{else}}full access{{end}} &middot; {{.RateLimit}} req/min &middot; created {{.CreatedAt.Format "2006-01-02"}}</span>
               </div>
               <form method="POST" action="/admin/apikeys/revoke">
                 <input type="hidden" name="id" value="{{.ID}}" />
@@ -327,6 +327,18 @@
                 required
                 class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
               />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-ap-muted dark:text-gp-muted" for="new-key-access-level">Access level</label>
+              <select
+                id="new-key-access-level"
+                name="access_level"
+                required
+                class="px-3 py-1.5 text-sm rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-text dark:text-gp-text focus:outline-none focus:ring-1 focus:ring-ap-primary dark:focus:ring-gp-primary"
+              >
+                <option value="readonly" selected>Read-only</option>
+                <option value="full">Full access</option>
+              </select>
             </div>
             <button
               type="submit"

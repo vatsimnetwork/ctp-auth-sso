@@ -22,7 +22,7 @@ var (
 	apiKeyCacheMu sync.RWMutex
 )
 
-func CreateAPIKey(name string, rateLimit int) (*models.APIKey, error) {
+func CreateAPIKey(name string, rateLimit int, readOnly bool) (*models.APIKey, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return nil, fmt.Errorf("generating api key: %w", err)
@@ -36,6 +36,7 @@ func CreateAPIKey(name string, rateLimit int) (*models.APIKey, error) {
 		Name:      name,
 		KeyHash:   keyHash,
 		RateLimit: rateLimit,
+		ReadOnly:  readOnly,
 	}
 	if err := database.DB.Create(key).Error; err != nil {
 		return nil, fmt.Errorf("storing api key: %w", err)

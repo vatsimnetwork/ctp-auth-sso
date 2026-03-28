@@ -70,6 +70,7 @@ func ValidateAPIKey(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"valid": true,
+		"valid":    true,
+		"readOnly": key.ReadOnly,
 	})
 }

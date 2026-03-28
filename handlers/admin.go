@@ -251,13 +251,15 @@ func AdminCreateAPIKey(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("rate limit must be a number between 1 and 100000")
 	}
 
-	key, err := services.CreateAPIKey(name, rateLimit)
+	readOnly := c.FormValue("access_level") != "full"
+
+	key, err := services.CreateAPIKey(name, rateLimit, readOnly)
 	if err != nil {
 		log.Error().Err(err).Str("name", name).Msg("admin: failed to create api key")
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
 
-	log.Info().Str("name", name).Int("rate_limit", rateLimit).Str("by", c.Locals("adminCID").(string)).Msg("admin: api key created")
+	log.Info().Str("name", name).Int("rate_limit", rateLimit).Bool("read_only", readOnly).Str("by", c.Locals("adminCID").(string)).Msg("admin: api key created")
 	return c.Redirect().To("/admin?new_key=" + key.RawKey)
 }
 
