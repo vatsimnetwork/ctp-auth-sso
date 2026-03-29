@@ -7,7 +7,8 @@ RUN go mod download
 
 COPY . .
 
-RUN chmod +x tailwindcss && \
+RUN curl -sLo tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
+    chmod +x tailwindcss && \
     ./tailwindcss -i static/themes.css -o static/tailwind.css --content "templates/**/*.html" --minify
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o /ctp-auth-sso .
