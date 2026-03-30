@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/vatsimnetwork/ctp-auth-sso/config"
+	"github.com/vatsimnetwork/ctp-auth-sso/models"
 	"github.com/vatsimnetwork/ctp-auth-sso/services"
 )
 
@@ -46,7 +47,13 @@ func Index(c fiber.Ctx) error {
 			data.IsAdmin = services.UserIsAdministrator(user)
 			if !data.IsAdmin {
 				if roles, err := services.ListRoles(); err == nil {
-					data.Roles = roles
+					newRoles := make([]models.Role, 0, len(roles))
+					for _, r := range roles {
+						if r.Name != "administrator" {
+							newRoles = append(newRoles, r)
+						}
+					}
+					data.Roles = newRoles
 				}
 			}
 		}
