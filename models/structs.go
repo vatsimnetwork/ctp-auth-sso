@@ -56,3 +56,9 @@ type RoleRequest struct {
 	Status    string    `gorm:"not null;default:'pending'"`
 	CreatedAt time.Time
 }
+
+type RoleSuspension struct {
+	ID             uint      `gorm:"primaryKey;autoIncrement"`
+	UserCID        string    `gorm:"uniqueIndex;not null;column:user_cid"`
+	SuspendedUntil time.Time `gorm:"not null;column:suspended_until"`
+}

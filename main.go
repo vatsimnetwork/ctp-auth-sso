@@ -154,6 +154,8 @@ func main() {
 	app.Get("/auth/callback", authLimiter, handlers.Callback)
 	app.Post("/auth/logout", authLimiter, middleware.OriginCheck, handlers.Logout)
 	app.Post("/role-requests", middleware.OriginCheck, handlers.RequestAccess)
+	app.Post("/admin/suspend-roles", middleware.OriginCheck, middleware.RequireAdminSession, handlers.AdminSuspendRoles)
+	app.Post("/admin/unsuspend-roles", middleware.OriginCheck, middleware.RequireAdminSession, handlers.AdminUnsuspendRoles)
 
 	admin := app.Group("/admin", middleware.RequireAdmin)
 	admin.Get("/", handlers.AdminPanel)

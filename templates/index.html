@@ -18,6 +18,15 @@
         <span class="text-sm text-ap-text dark:text-gp-text">{{.UserName}} ({{.CID}})</span>
         {{if .IsAdmin}}
         <a href="/admin" class="text-sm text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Admin</a>
+        {{if .SuspendedUntil}}
+        <form method="POST" action="/admin/unsuspend-roles">
+          <button type="submit" class="text-xs px-2 py-1 rounded border border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:opacity-80 transition-opacity duration-100">End test (until {{.SuspendedUntilStr}})</button>
+        </form>
+        {{else}}
+        <form method="POST" action="/admin/suspend-roles">
+          <button type="submit" class="text-xs px-2 py-1 rounded border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface text-ap-muted dark:text-gp-muted hover:text-ap-text dark:hover:text-gp-text transition-colors duration-100">Test as user</button>
+        </form>
+        {{end}}
         {{else}}
         <button type="button" id="request-access-btn" class="text-sm text-ap-text dark:text-gp-text hover:text-ap-muted dark:hover:text-gp-muted transition-colors duration-100">Request Access</button>
         {{end}}
@@ -95,21 +104,34 @@
   <main class="flex-1 flex items-center justify-center px-6">
 
     {{if .LoggedIn}}
-    <!-- Dashboard view -->
-    <div class="max-w-sm w-full flex flex-col items-center text-center">
-      <div class="flex flex-col gap-2 mb-8 w-full">
-        {{range .Services}}
-        <a
-          href="{{.URL}}"
-          class="flex items-center justify-between px-4 py-3 rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface hover:border-ap-primary dark:hover:border-gp-primary text-sm transition-colors duration-100"
-        >
-          <span>{{.Name}}</span>
-          <svg class="w-4 h-4 text-ap-muted dark:text-gp-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
+    <!-- Roles box — fixed top-right corner -->
+    {{if .UserRoles}}
+    <div class="fixed top-14 right-6 w-48 border border-ap-border dark:border-gp-border rounded-md overflow-hidden z-10">
+      <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+        <span class="text-sm font-medium">Your roles</span>
+      </div>
+      <div class="divide-y divide-ap-border dark:divide-gp-border bg-ap-bg dark:bg-gp-bg">
+        {{range .UserRoles}}
+        <div class="px-4 py-2">
+          <span class="text-sm text-ap-text dark:text-gp-text">{{.}}</span>
+        </div>
         {{end}}
       </div>
+    </div>
+    {{end}}
+    <!-- Dashboard view -->
+    <div class="max-w-sm w-full flex flex-col gap-2">
+      {{range .Services}}
+      <a
+        href="{{.URL}}"
+        class="flex items-center justify-between px-4 py-3 rounded-md border border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface hover:border-ap-primary dark:hover:border-gp-primary text-sm transition-colors duration-100"
+      >
+        <span>{{.Name}}</span>
+        <svg class="w-4 h-4 text-ap-muted dark:text-gp-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+      {{end}}
     </div>
 
     {{else}}

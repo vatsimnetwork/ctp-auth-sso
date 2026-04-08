@@ -281,3 +281,23 @@ func AdminRevokeAPIKey(c fiber.Ctx) error {
 	log.Info().Uint64("id", id).Str("by", c.Locals("adminCID").(string)).Msg("admin: api key revoked")
 	return c.Redirect().To("/admin")
 }
+
+func AdminSuspendRoles(c fiber.Ctx) error {
+	cid := c.Locals("adminCID").(string)
+	if err := services.SuspendRoles(cid); err != nil {
+		log.Error().Err(err).Str("cid", cid).Msg("admin: failed to suspend roles")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+	log.Info().Str("cid", cid).Msg("admin: roles suspended for testing")
+	return c.Redirect().To("/")
+}
+
+func AdminUnsuspendRoles(c fiber.Ctx) error {
+	cid := c.Locals("adminCID").(string)
+	if err := services.UnsuspendRoles(cid); err != nil {
+		log.Error().Err(err).Str("cid", cid).Msg("admin: failed to unsuspend roles")
+		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
+	}
+	log.Info().Str("cid", cid).Msg("admin: roles unsuspended")
+	return c.Redirect().To("/")
+}

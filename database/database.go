@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	zl "github.com/rs/zerolog"
@@ -29,7 +30,7 @@ func Connect() {
 
 	log.Info().Msg("running migrations...")
 
-	if err := DB.AutoMigrate(&models.User{}, &models.Session{}, &models.Role{}, &models.APIKey{}, &models.RoleRequest{}); err != nil {
+	if err := DB.AutoMigrate(&models.User{}, &models.Session{}, &models.Role{}, &models.APIKey{}, &models.RoleRequest{}, &models.RoleSuspension{}); err != nil {
 		log.Fatal().Err(err).Msg("automigrate failed")
 	}
 
@@ -92,6 +93,9 @@ func (z *zerologAdapter) Trace(_ context.Context, begin time.Time, fc func() (st
 	var ev *zl.Event
 	switch {
 	case err != nil && z.level >= gormlogger.Error:
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return // not-found is a normal outcome, not an error
+		}
 		ev = log.Error().Err(err)
 	case elapsed > z.SlowThreshold && z.level >= gormlogger.Warn:
 		ev = log.Warn().Dur("elapsed", elapsed).Str("slow_query", "true")

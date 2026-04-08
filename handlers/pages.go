@@ -45,6 +45,27 @@ func Index(c fiber.Ctx) error {
 			data.UserName = user.FullName
 			data.CID = user.CID
 			data.IsAdmin = services.UserIsAdministrator(user)
+
+			userRoles := make([]string, 0, len(user.Roles))
+			addedAdmin := false
+			for _, r := range user.Roles {
+				userRoles = append(userRoles, r.Name)
+				if r.Name == "administrator" {
+					addedAdmin = true
+				}
+			}
+			if data.IsAdmin && user.CID == config.C.AdminCID && !addedAdmin {
+				userRoles = append(userRoles, "administrator")
+			}
+			data.UserRoles = userRoles
+
+			if data.IsAdmin {
+				if suspended, err := services.GetSuspension(user.CID); err == nil && suspended != nil {
+					data.SuspendedUntil = suspended
+					data.SuspendedUntilStr = suspended.UTC().Format("15:04Z")
+				}
+			}
+
 			if !data.IsAdmin {
 				if roles, err := services.ListRoles(); err == nil {
 					newRoles := make([]models.Role, 0, len(roles))
