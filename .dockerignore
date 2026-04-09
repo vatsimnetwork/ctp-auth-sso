@@ -5,7 +5,6 @@ SECURITY_AUDIT.md
 
 # Dev tooling
 tailwindcss.exe
-themes.css
 
 # Go build cache / test artifacts
 *.test
