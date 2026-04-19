@@ -170,6 +170,8 @@ func main() {
 	admin.Post("/requests/approve", middleware.OriginCheck, handlers.AdminApproveRequest)
 	admin.Post("/requests/deny-one", middleware.OriginCheck, handlers.AdminDenySingleRequest)
 	admin.Post("/requests/deny", middleware.OriginCheck, handlers.AdminDenyRequests)
+	admin.Post("/locks/slot", middleware.OriginCheck, handlers.AdminToggleSlotLock)
+	admin.Post("/locks/route", middleware.OriginCheck, handlers.AdminToggleRouteLock)
 
 	if len(config.C.InternalAllowlist) > 0 {
 		app.Get("/internal/session/validate",

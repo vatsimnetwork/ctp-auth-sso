@@ -39,6 +39,8 @@ type adminPageData struct {
 	SessionCID   string
 	Version      int64
 	RoleRequests []services.PendingRequestGroup
+	SlotLock     bool
+	RouteLock    bool
 }
 
 func AdminPanel(c fiber.Ctx) error {
@@ -46,13 +48,15 @@ func AdminPanel(c fiber.Ctx) error {
 		roles        []services.RoleWithUsers
 		keys         []models.APIKey
 		requests     []services.PendingRequestGroup
+		locks        *services.LockState
 		rolesErr     error
 		keysErr      error
 		requestsErr  error
+		locksErr     error
 	)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -69,6 +73,11 @@ func AdminPanel(c fiber.Ctx) error {
 		requests, requestsErr = services.ListPendingRequestGroups()
 	}()
 
+	go func() {
+		defer wg.Done()
+		locks, locksErr = services.GetLockSettings()
+	}()
+
 	wg.Wait()
 
 	if rolesErr != nil {
@@ -83,6 +92,10 @@ func AdminPanel(c fiber.Ctx) error {
 		log.Error().Err(requestsErr).Msg("admin: failed to list role requests")
 		return c.Status(fiber.StatusInternalServerError).SendString("internal server error")
 	}
+	if locksErr != nil {
+		log.Warn().Err(locksErr).Msg("admin: failed to load lock settings, defaulting to unlocked")
+		locks = &services.LockState{}
+	}
 
 	data := adminPageData{
 		Roles:        roles,
@@ -92,6 +105,8 @@ func AdminPanel(c fiber.Ctx) error {
 		SessionCID:   c.Locals("adminCID").(string),
 		Version:      startupVersion,
 		RoleRequests: requests,
+		SlotLock:     locks.SlotLock,
+		RouteLock:    locks.RouteLock,
 	}
 
 	c.Set("Content-Type", "text/html; charset=utf-8")
@@ -300,4 +315,34 @@ func AdminUnsuspendRoles(c fiber.Ctx) error {
 	}
 	log.Info().Str("cid", cid).Msg("admin: roles unsuspended")
 	return c.Redirect().To("/")
+}
+
+func AdminToggleSlotLock(c fiber.Ctx) error {
+	rawValue := c.FormValue("slot_lock")
+	if rawValue != "on" && rawValue != "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid value for slot_lock"})
+	}
+	locked := rawValue == "on"
+
+	if err := services.SetSlotLock(locked); err != nil {
+		log.Error().Err(err).Msg("admin: failed to toggle slot lock")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update slot lock"})
+	}
+	log.Info().Bool("locked", locked).Str("by", c.Locals("adminCID").(string)).Msg("admin: slot lock toggled")
+	return c.JSON(fiber.Map{"slotLock": locked})
+}
+
+func AdminToggleRouteLock(c fiber.Ctx) error {
+	rawValue := c.FormValue("route_lock")
+	if rawValue != "on" && rawValue != "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid value for route_lock"})
+	}
+	locked := rawValue == "on"
+
+	if err := services.SetRouteLock(locked); err != nil {
+		log.Error().Err(err).Msg("admin: failed to toggle route lock")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update route lock"})
+	}
+	log.Info().Bool("locked", locked).Str("by", c.Locals("adminCID").(string)).Msg("admin: route lock toggled")
+	return c.JSON(fiber.Map{"routeLock": locked})
 }

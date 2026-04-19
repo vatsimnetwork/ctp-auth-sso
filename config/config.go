@@ -48,6 +48,9 @@ type Config struct {
 
 	Services []ServiceEntry
 
+	// CTP API URL for pushing lock state
+	CtpAPIURL string
+
 	IdleTimeoutHours    int
 	SessionLifetimeDays int
 }
@@ -90,6 +93,8 @@ func Load() {
 		ProxyHeader:    getEnv("PROXY_HEADER", "X-Forwarded-For"),
 
 		Services: loadServices(),
+
+		CtpAPIURL: getEnv("CTP_API_URL", ""),
 
 		IdleTimeoutHours:    getEnvInt("IDLE_TIMEOUT_HOURS", 4),
 		SessionLifetimeDays: getEnvInt("SESSION_LIFETIME_DAYS", 14),

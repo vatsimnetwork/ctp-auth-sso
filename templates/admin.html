@@ -224,6 +224,35 @@
       <!-- Right: action forms -->
       <div class="w-72 flex-shrink-0 flex flex-col gap-6">
 
+        <!-- Planner locks -->
+        <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
+          <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">
+            <span class="text-sm font-medium">Planner Locks</span>
+          </div>
+          <div class="px-4 py-4 flex flex-col gap-3 bg-ap-bg dark:bg-gp-bg">
+            <label class="flex items-center justify-between cursor-pointer select-none">
+              <span class="text-sm text-ap-text dark:text-gp-text">Slot Lock</span>
+              <input
+                type="checkbox"
+                id="slot-lock-toggle"
+                {{if .SlotLock}}checked{{end}}
+                class="w-3.5 h-3.5 accent-ap-primary dark:accent-gp-primary cursor-pointer"
+              />
+            </label>
+            <span class="text-xs text-ap-muted dark:text-gp-muted -mt-1">Prevents changes to slot numbers. Throughput limits stay editable.</span>
+            <label class="flex items-center justify-between cursor-pointer select-none">
+              <span class="text-sm text-ap-text dark:text-gp-text">Route Lock</span>
+              <input
+                type="checkbox"
+                id="route-lock-toggle"
+                {{if .RouteLock}}checked{{end}}
+                class="w-3.5 h-3.5 accent-ap-primary dark:accent-gp-primary cursor-pointer"
+              />
+            </label>
+            <span class="text-xs text-ap-muted dark:text-gp-muted -mt-1">Prevents edits to routes in the slot planner.</span>
+          </div>
+        </div>
+
         <!-- Manage user roles -->
         <div class="border border-ap-border dark:border-gp-border rounded-md overflow-hidden">
           <div class="px-4 py-2 border-b border-ap-border dark:border-gp-border bg-ap-surface dark:bg-gp-surface">

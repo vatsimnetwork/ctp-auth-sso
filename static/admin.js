@@ -92,6 +92,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var bulkAddBtn = document.getElementById('bulk-add-btn');
 
+  // Lock toggles
+  var slotLockToggle = document.getElementById('slot-lock-toggle');
+  var routeLockToggle = document.getElementById('route-lock-toggle');
+
+  function sendLockToggle(url, paramName, checked, toggle) {
+    var body = new URLSearchParams();
+    if (checked) body.set(paramName, 'on');
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    }).then(function (r) {
+      if (!r.ok) { toggle.checked = !checked; }
+    }).catch(function () { toggle.checked = !checked; });
+  }
+
+  if (slotLockToggle) {
+    slotLockToggle.addEventListener('change', function () {
+      sendLockToggle('/admin/locks/slot', 'slot_lock', slotLockToggle.checked, slotLockToggle);
+    });
+  }
+
+  if (routeLockToggle) {
+    routeLockToggle.addEventListener('change', function () {
+      sendLockToggle('/admin/locks/route', 'route_lock', routeLockToggle.checked, routeLockToggle);
+    });
+  }
+
   if (bulkAddBtn) {
     var bulkCidInput = document.getElementById('bulk-cid-input');
     var bulkCidList = document.getElementById('bulk-cid-list');
